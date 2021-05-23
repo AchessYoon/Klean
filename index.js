@@ -1,0 +1,1019 @@
+'use strict';
+//window.onload = function() {}
+
+
+function isArrayEq(arr1, arr2){
+    if(arr1.length != arr2.length) return false;
+    for(var i = 0; i < arr1.length; i++)
+        if(arr1[i] != arr2[i]) return false;
+    return true;
+}
+
+function copyArray(arr){
+    return arr.slice();
+    // var newArr = [];
+    // for(var i = 0; i < arr.length; i++)
+    //     newArr.push(arr[i]);
+    // return newArr;
+}
+
+function isFirstPathCommingEarlier(arr1, arr2){
+    if(arr1.length != arr2.length) return null;
+    for(var i = 0; i < arr1.length; i++)
+        if(arr1[i] < arr2[i]) return true;
+    return false;
+}
+
+
+
+class accData {
+    constructor(source, givenHierarchy, givenItemFields){
+        this._hierarchy = givenHierarchy;
+        this._itemFields = givenItemFields;
+        this._content = source;
+    }
+    get content() {
+        return this._content;
+    }
+    get hierarchy() {
+        return this._hierarchy;
+    }
+    get itemFields() {
+        return this._itemFields;
+    }
+    fieldNum(fieldName) {//코드 관리를 위해 fieldNum은 변수가 아닌 string을 바로 인자로 호출
+        return this._itemFields.indexOf(fieldName);
+    }
+    getClassData(classPath) {
+        if(classPath.length == 1){
+        return this.content[classPath[0]][1];
+        }else if(classPath.length == 2){
+        return this.content[classPath[0]][1][classPath[1]][1];
+        }else if(classPath.length == 3){
+        return this.content[classPath[0]][1][classPath[1]][1][classPath[2]][1];
+        }
+    }
+    getItem(itemPath) {
+        if(itemPath.length == 3)
+            return this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]];
+        else if(itemPath.length == 4)
+            return this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]][1][itemPath[3]];
+        else console.log('error');
+    }
+    setItemField(itemPath, feildIdx, feildData) {
+        if(itemPath.length == 3)
+            this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]][feildIdx] = feildData;
+        else if(itemPath.length == 4)
+            this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]][1][itemPath[3]][feildIdx] = feildData;
+        else console.log('error');
+    }
+    insertItem(itemPath, item) {
+        if(itemPath.length == 3)
+            this.content[itemPath[0]][1][itemPath[1]][1].splice(itemPath[2], 0, item);
+        else if(itemPath.length == 4)
+            this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]][1].splice(itemPath[3], 0, item);
+        else console.log('error');
+    }
+    removeItem(itemPath, isLeaveClass = false) {
+        if(itemPath.length == 3){
+            if(!isLeaveClass && this.countItemsInClass(itemPath.slice(0, 2)) == 1) 
+                this.content[itemPath[0]][1].splice(itemPath[1], 1);
+            else 
+                this.content[itemPath[0]][1][itemPath[1]][1].splice(itemPath[2], 1);
+        }else if(itemPath.length == 4){
+            if(!isLeaveClass && this.countItemsInClass(itemPath.slice(0, 3)) == 1) {
+                if(this.countItemsInClass(itemPath.slice(0, 2)) == 1)
+                    this.content[itemPath[0]][1].splice(itemPath[1], 1);
+                else
+                    this.content[itemPath[0]][1][itemPath[1]][1].splice(itemPath[2], 1);
+            }else 
+                this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]][1].splice(itemPath[3], 1);
+        }else{console.log('error');}
+    }
+    insertClass(classPath, insertingData) {
+        if(classPath.length == 2){
+        this.content[classPath[0]][1].splice(classPath[1], 0, insertingData);
+        }else if(classPath.length == 3){
+        this.content[classPath[0]][1][classPath[1]][1].splice(classPath[2], 0, insertingData);
+        }else if(classPath.length == 4){
+        this.content[classPath[0]][1][classPath[1]][1][classPath[2]][1].splice(classPath[3], 0, insertingData);
+        }
+    }
+    removeClass(classPath, isLeaveParent = false) {
+        if(classPath.length == 2){
+            if(!isLeaveParent && this.content[classPath[0]][1].length == 1) 
+                return false;//removeClass(classPath.slice(0,1));//can't remove root
+            else {
+                this.content[classPath[0]][1].splice(classPath[1], 1);
+            }
+        }else if(classPath.length == 3){
+            if(!isLeaveParent && this.content[classPath[0]][1][classPath[1]][1].length == 1) {
+                this.removeClass(classPath.slice(0,2));
+            }
+            else {
+                this.content[classPath[0]][1][classPath[1]][1].splice(classPath[2], 1);
+            }
+        }else if(classPath.length == 4){
+            if(!isLeaveParent && this.content[classPath[0]][1][classPath[1]][1][classPath[2]][1].length == 1) 
+                this.removeClass(classPath.slice(0,3));
+            else 
+                this.content[classPath[0]][1][classPath[1]][1][classPath[2]][1].splice(classPath[3], 1);
+        }
+    }
+    moveItem(from, to) {
+        from = from*1;
+        to = to*1;//in case of string
+        var fromPath = this.getDataPath(from);
+        var toPath = this.getDataPath(to);
+        var pathLength = toPath.length;
+        if (from < to) toPath[pathLength-1]++;
+        
+        var item = this.getItem(fromPath);
+        this.insertItem(toPath, item);
+        if(to < from && fromPath[pathLength-2] == toPath[pathLength-2]) fromPath[pathLength-1]++;
+        this.removeItem(fromPath, true);
+    }
+    moveClass(fromPath, toPath) {
+        console.log(fromPath, toPath);
+        var fromPathCopy = copyArray(fromPath);
+        var toPathCopy = copyArray(toPath);
+
+        var pathLength = toPathCopy.length;
+        if (fromPathCopy[1] < toPathCopy[1] || 
+            (fromPathCopy[1] == toPathCopy[1] && fromPathCopy[2] < toPathCopy[2]) || 
+            (fromPathCopy[1] == toPathCopy[1] && fromPathCopy[2] == toPathCopy[2] && fromPathCopy[3] < toPathCopy[3])) 
+                toPathCopy[pathLength-1]++;
+        
+        var insertingData = [this.getClassName(fromPathCopy), this.getClassData(fromPathCopy)];
+        this.insertClass(toPathCopy, insertingData);
+        if(fromPathCopy[pathLength-2] == toPathCopy[pathLength-2] && fromPathCopy[pathLength-1] > toPathCopy[pathLength-1]) fromPathCopy[pathLength-1]++;
+        this.removeClass(fromPathCopy, true);
+    }
+    getClassName(classPath) {
+        if (classPath.length == 1) {
+        return this.content[classPath[0]][0];
+        } else if(classPath.length == 2) {
+        return this.content[classPath[0]][1][classPath[1]][0];
+        } else if(classPath.length == 3) {
+        return this.content[classPath[0]][1][classPath[1]][1][classPath[2]][0];
+        }
+    }
+    countItemsInClass(classPath) {
+        if(classPath.length == this._hierarchy.length){//lowest class
+            return this.countSubclass(classPath);
+        } else {//sum item-count in subclasses
+            var itemCount = 0;
+            for(let i = 0; i < this.countSubclass(classPath); i++){
+                // var subClassPath = classPath.slice();
+                // subClassPath.push(i);
+                var subClassPath = classPath.concat([i]);
+                itemCount += this.countItemsInClass(subClassPath);
+            }
+            return itemCount;
+        }
+    }
+    countSubclass(classPath) {//I dont know why but didnt want to name countSubclasses...
+        return this.getClassData(classPath).length;
+    }
+    getDataPathRecursion(idxInClass, dataPath) {
+        if(dataPath.length == this._hierarchy.length) {
+            dataPath.push(idxInClass);
+            return dataPath;
+        }else{
+            var idx = idxInClass;
+            // var childDataPath = dataPath.slice();
+            // childDataPath.push(0);
+            var childDataPath = dataPath.concat([0]);
+            for(; idx >= this.countItemsInClass(childDataPath); childDataPath[childDataPath.length-1]++) {
+                idx -= this.countItemsInClass(childDataPath);
+            }
+            return this.getDataPathRecursion(idx, childDataPath);
+        }
+    }
+    getDataPath(idx) {
+        return this.getDataPathRecursion(idx, [0]);
+    }
+    // getDataIdx(dataPath) {
+    //     var idx = 0;
+    //     for(var i = 0; i < dataPath[0]; i++)
+    //         idx += this.countItemsInClass(dataPath.slice(0,1));
+    //     if(dataPath.length >= 2)
+    //         for(var i = 0; i < dataPath[1]; i++)
+    //             idx += this.countItemsInClass(dataPath.slice(0,2));
+    //     if(dataPath.length == 3)
+    //         idx += dataPath[2];
+    //     return ++idx;
+    // }
+
+    //--Item Code--
+    calculateItemCode(itemPath){
+        if(itemPath[1] > 25 || itemPath[2] > 25 || (itemPath.length==4 && itemPath[3] > 25)) alert('코드 배정 범위 초과');
+        if(itemPath.length==3)
+            return String.fromCharCode(65 + itemPath[1]) + String.fromCharCode(65 + itemPath[2]);
+        if(itemPath.length==4)
+            return String.fromCharCode(65 + itemPath[1]) + String.fromCharCode(65 + itemPath[2]) + (itemPath[3]+1);
+    }
+    reassignItemCodes(){
+        for(var i = 0; i < this.countItemsInClass([0]); i++) {
+            var itemPath = this.getDataPath(i);
+            var itemCode = this.calculateItemCode(itemPath);
+            this.setItemField(itemPath, this.fieldNum('코드'), itemCode);
+        }
+    }
+}
+
+class dragHandler {
+    constructor(table){
+        this._table = table;
+
+        //bound 'this' of event handers 
+        this._boundStartDrag = this.startDrag.bind(this);
+        this._boundUpdateWhileDrag = this.updateWhileDrag.bind(this);
+        this._boundUpdateAfterDrag = this.endDrag.bind(this);
+
+        this._chunkToMove = null;
+        this._chunkLength = null;
+        this._targetPath = null;
+        this._dragElem = null;
+        this._mouseDownX = 0;
+        this._mouseDownY = 0;
+
+        //keywords
+        this.DRAGHANDLE = 'drag-handle-cell';
+        this.INCOME = 'income';
+        this.EXPENDITURE = 'expenditure';
+        this.INVISABLE = 'invisable-cell';
+
+        this._hidingRowCount = 0;
+
+        var dragHandles = this._table.DOMElement.getElementsByClassName(this.DRAGHANDLE);
+        for(let i = 0; i < dragHandles.length; i++) 
+            dragHandles[i].addEventListener('mousedown', this._boundStartDrag);
+    }
+    getStartingRowOfChunk(chunkPath) {
+        console.log(chunkPath);
+        var startingRowPath = chunkPath.slice();
+        var startingRow = null;
+        for(; startingRowPath.length <= this._table.data.hierarchy.length + 1; startingRowPath.push(0)) {
+            startingRow = document.getElementById(this._table.RowIDPrefix + startingRowPath);
+            console.log(startingRow);
+            if(startingRow) return startingRow;
+        }
+    }
+    getRowChunk(row, length = 1) {
+        var chunk = [];
+        var rowToPush = row;
+        chunk.push(rowToPush);
+        for(var i = 1; i < length; i++) {
+            rowToPush = rowToPush.nextElementSibling;
+            chunk.push(rowToPush);
+        }
+        return chunk;
+    }
+    createDragElem() {
+        this._dragElem = document.createElement('Table');
+        this._dragElem.append(this._table.createColgroup());
+
+        for(var i = 0; i <this._chunkToMove.length; i++) {
+            console.log(1111111);
+            var dragElemRow = this._chunkToMove[i].cloneNode(true);
+
+            if(this._table.mode[1]==this.INCOME) {
+                if(dragElemRow.cells[0].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[0]))
+                    dragElemRow.cells[0].remove();
+                if(dragElemRow.cells[0].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[1]))
+                    dragElemRow.cells[0].remove();
+                dragElemRow.insertCell(0).classList.add(this.INVISABLE);
+                dragElemRow.insertCell(0).classList.add(this.INVISABLE);
+            }
+
+            if(this._table.mode[1]==this.EXPENDITURE) {
+                if(dragElemRow.cells[0].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[0]))
+                    dragElemRow.cells[0].remove();
+                dragElemRow.insertCell(0).classList.add(this.INVISABLE);
+                if(this._targetPath.length >= 3){
+                    if(dragElemRow.cells[2].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[1])){
+                        dragElemRow.cells[1].remove();
+                        dragElemRow.cells[1].remove();
+                    }
+                    dragElemRow.insertCell(0).classList.add(this.INVISABLE);
+                    dragElemRow.insertCell(0).classList.add(this.INVISABLE);
+                    if(this._targetPath.length >= 4){
+                        if(dragElemRow.cells[4].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[2])) {
+                            dragElemRow.cells[3].remove();
+                            dragElemRow.cells[3].remove();
+                        }
+                        dragElemRow.insertCell(0).classList.add(this.INVISABLE);
+                        dragElemRow.insertCell(0).classList.add(this.INVISABLE);
+                    }
+                }
+            }
+
+            this._dragElem.append(dragElemRow);
+        }
+
+        this._dragElem.id = 'drag-elem';
+        this._dragElem.classList.add(this._table.HTMLTableClass);
+
+        document.getElementById('ui-container').appendChild(this._dragElem);
+
+        this._dragElem.style.position = 'fixed';
+        this._dragElem.style.top = this._chunkToMove[0].getBoundingClientRect().y + 'px';
+        this._dragElem.style.left = this._chunkToMove[0].getBoundingClientRect().x + 'px';
+
+        // this._dragElem.style.left = '50%';
+        // this._dragElem.style.marginLeft = (-this._dragElem.offsetWidth/2) + 'px';
+
+        document.dispatchEvent(new MouseEvent('mousemove',
+            { view: window, cancelable: true, bubbles: true }
+        ));
+
+        return this._dragElem;
+    }
+    startDrag(event) {
+        if(event.button != 0) return true;
+
+        document.onselectstart = () => {return false;}//prevent error by drag selection
+        //document.addEventListener('selectstart', returnFalse);
+        // if(this._table.mode[1]==this.EXPENDITURE)
+        this._targetPath = JSON.parse(event.target.getAttribute('path'));
+        if(this._targetPath.length == this._table.data.hierarchy.length+1) this._chunkLength = 0;
+        else this._chunkLength = this._table.countClassRows(this._targetPath);
+        this._chunkToMove = this.getRowChunk(event.target.closest('tr'), this._chunkLength);
+
+        if(this._chunkToMove) {
+            this.createDragElem();
+            this._mouseDownX = event.clientX;
+            this._mouseDownY = event.clientY;
+            document.addEventListener('mousemove', this._boundUpdateWhileDrag);
+            document.addEventListener('mouseup', this._boundUpdateAfterDrag);
+        }
+    }
+    isMoveCondition(originalPosY, floatingPos, comparingPos){
+        var posCriteria = comparingPos.y + comparingPos.height / 2;
+        if(originalPosY < comparingPos.y) { //getting closer from higer position
+            if(floatingPos.y + floatingPos.height / 2 > posCriteria) return true;
+        }else{ //getting closer from lower position
+            if(floatingPos.y + floatingPos.height / 2 < posCriteria) return true;
+        }
+        return false;
+    }
+    moveRow() {
+        if(this._chunkLength == 0) {
+            let floatingPos = this._dragElem.getBoundingClientRect(),
+                currIndex = this._chunkToMove[0].rowIndex - this._table.tHeadLength,
+                rows = this._table.DOMElement.querySelectorAll('tbody tr');
+            for(let i = Math.max(0, currIndex-5); i < Math.min(rows.length, currIndex+5); i++) {
+                let rowPos = rows[i].getBoundingClientRect(),
+                    toIndex = rows[i].rowIndex - this._table.tHeadLength;
+
+                if(currIndex != toIndex && Math.abs(floatingPos.y - rowPos.y) < rowPos.height / 2) {
+                    this._table.data.moveItem(currIndex, toIndex);
+                    this._table.rereadTable();
+                    this._chunkToMove[0] = document.getElementById(this._table.RowIDPrefix + this._table.data.getDataPath(toIndex));
+                    break;
+                }
+            }
+        } else {
+            let floatingPos = this._dragElem.getBoundingClientRect(),
+                chunkStartIndex = this._chunkToMove[0].rowIndex - this._table.tHeadLength,
+                rows = this._table.DOMElement.querySelectorAll('tbody tr');
+
+            // console.log('---------');
+            // console.log(this._targetPath);
+            for(let i = Math.max(0, chunkStartIndex-5); i < Math.min(rows.length-1, chunkStartIndex+this._chunkToMove.length+4); i++) {
+                var checkingChunkPath = this._table.getRowPath(rows[i]);
+                if (this._targetPath.length < checkingChunkPath.length)
+                    checkingChunkPath = checkingChunkPath.slice(0, this._targetPath.length);
+                var checkingChunkPos = null;
+                if(this._chunkLength == 0) {
+                    checkingChunkPos = this._chunkToMove[0].getBoundingClientRect();
+                } else {
+                    var classCell = this._table.DOMElement.getElementsByClassName(this._table.HTMLPrefix + checkingChunkPath)[0];
+                    checkingChunkPos = classCell.getBoundingClientRect();
+                }
+                var originalPosY = this._chunkToMove[0].getBoundingClientRect().y;
+
+                if(!isArrayEq(this._targetPath, checkingChunkPath) && this.isMoveCondition(originalPosY, floatingPos, checkingChunkPos)) {
+                    this._table.data.moveClass(this._targetPath, checkingChunkPath);
+                    this._table.rereadTable();
+                    this._targetPath = copyArray(checkingChunkPath);
+                    if(isFirstPathCommingEarlier(this._targetPath.slice(0, this._targetPath.length-1), checkingChunkPath.slice(0, checkingChunkPath.length-1)))
+                        this._targetPath[this._targetPath.length - 1]++;
+                    while(checkingChunkPath.length < this._table.data.hierarchy.length + 1) checkingChunkPath.push(0);
+                    var newSratingRowPath = this._targetPath.concat([0]);
+                    var newSratingRow = document.getElementById(this._table.RowIDPrefix + newSratingRowPath);
+                    newSratingRow = this.getStartingRowOfChunk(this._targetPath);
+                    this._chunkToMove = this.getRowChunk(newSratingRow, this._chunkToMove.length);
+                    break;
+                }
+            }
+        }
+    }
+    updateWhileDrag(event) {
+        this._dragElem.style.transform = 'translate3d(' 
+            + (event.clientX - this._mouseDownX)/10 + 'px, ' 
+            + (event.clientY - this._mouseDownY) + 'px, 0)';
+        this.moveRow();
+    }
+    endDrag(event) {
+        this._chunkToMove = null;
+        this._targetPath = null;
+        this._chunkToMove = null;
+        this._dragElem.remove();
+        document.onselectstart = null;
+        document.removeEventListener('mousemove', this._boundUpdateWhileDrag);
+        document.removeEventListener('mouseup', this._boundUpdateAfterDrag);
+    }
+}
+
+class accTable{
+    constructor(tableID, parentElement, tableType, givenData){
+        this._tableType = tableType;
+
+        //bound 'this' of event handers 
+        this._boundHandlePaste = this.handlePaste.bind(this);
+        this._boundPreventEnter = this.preventEnter.bind(this);
+        this._boundAmountCellPrepareEdit = this.amountCellPrepareEdit.bind(this);
+        this._boundAmountCellAfterEdit = this.amountCellAfterEdit.bind(this);
+        this._boundamountCellAfterPaste = this.amountCellAfterPaste.bind(this);
+
+        this._HTMLPrefix = 'acc-';
+        this._HTMLIDPrefix = 'acc-' + tableID + '-';
+        this._RowIDPrefix = this._HTMLIDPrefix + 'row-';
+        this._HTMLTableClass = this._HTMLPrefix + 'table';
+        this._HTMLItemClass = this._HTMLPrefix + 'item';
+        this._HTMLItemPrefix = this._HTMLPrefix + 'item-';
+        this._HTMLClassPrefix = this._HTMLPrefix + 'class-';
+        this._HTMLColPrefix = this._HTMLPrefix + 'col-';
+        this._HTMLHeadPrefix = this._HTMLPrefix + 'h-';
+
+        //keywords
+        this.INCOME = 'income';
+        this.EXPENDITURE = 'expenditure';
+        this.DRAGHANDLE = 'drag-handle-cell';
+        this.EMPTYROW = 'empty-placeholder-row'
+        this.EMPTYCELL = 'empty-placeholder-cell'
+
+        this._dataHierarchy = null;
+        this._dataItemFields = null;
+        this._itemCellComposition = null;
+        this._itemCellFieldMatch = null;
+        this.applyTableType();
+        // this._classComposition = this.data.hierarchy;
+
+        this._data = new accData(givenData, this._dataHierarchy, this._dataItemFields);
+        this._dataHierarchy = null;
+        this._dataItemFields = null;
+
+        this._columnShow = Array.from(
+            {length: this.data.hierarchy.length + this._itemCellComposition.length}, 
+            () => true); //[true, true, true, ..., true]
+
+        this._tableElement = document.createElement('table');
+        this._tableElement.id = this._HTMLIDPrefix + 'table';
+        this._tableElement.classList.add(this._HTMLPrefix + 'table');
+
+        this._tableColgroup = this.createColgroup();
+        this._tableElement.append(this._tableColgroup);
+        this._tableElement.append(this.createThead());
+
+        parentElement.append(this._tableElement);
+
+        this.readDataAndSet();
+    }
+    get DOMElement() {return this._tableElement;}
+    get data() {return this._data;}
+    get mode() {return this._tableType;}
+    get tableColgroup() {return this._tableColgroup;}
+    get HTMLPrefix() {return this._HTMLPrefix;}
+    get HTMLIDPrefix() {return this._HTMLIDPrefix;}
+    get RowIDPrefix() {return this._RowIDPrefix;}
+    get HTMLTableClass() {return this._HTMLTableClass;}
+    get HTMLItemClass() {return this._HTMLItemClass;}
+    get HTMLItemPrefix() {return this._HTMLItemPrefix;}
+    get HTMLClassPrefix() {return this._HTMLClassPrefix;}
+    get tHeadLength() {return this._tableElement.tHead.children.length}
+
+    //--Helper functions--
+    // getClassCells(classLevel) {
+    //     return Array.from(this._tableElement.getElementsByClassName(this._HTMLPrefix + this.data.hierarchy[classLevel]));
+    // }
+    cellNum(cellFieldName) {//코드 관리를 위해 cellNum은 변수가 아닌 string을 바로 인자로 호출
+        return this._itemCellComposition.indexOf(cellFieldName);
+    }
+    getItemIdx(elem) {
+        var row  = elem.tagName == 'TR' ?  elem : elem.closest('tr');
+        return Number(row.getAttribute('item-index'));
+    }
+    getRowPath(elem) {
+        var row  = elem.tagName == 'TR' ?  elem : elem.closest('tr');
+        return JSON.parse(row.getAttribute('path'));
+    }
+    snycCellToData(cell, feildData = cell.textContent) {//snyc from cell to data
+        var itemPath = this.getRowPath(cell);
+        var feildIdx = cell.getAttribute('feild-idx');
+        this._data.setItemField(itemPath, feildIdx, feildData);
+    }
+    countClassRows(classPath) { //count including empty class row
+        if(classPath.length == this._data._hierarchy.length){//lowest class
+            return Math.max(1, this._data.countSubclass(classPath));
+        } else {//sum item-count in subclasses
+            var itemCount = 0;
+            if(this._data.countSubclass(classPath) == 0) itemCount = 1;
+            for(let i = 0; i < this._data.countSubclass(classPath); i++){
+                var subClassPath = classPath.concat([i]);
+                itemCount += this.countClassRows(subClassPath);
+            }
+            return itemCount;
+        }
+    }
+    selectOnFocus(focusEvent) { //focusedCell must be an element
+        var focusedCell = focusEvent.target;
+        if(!focusedCell.hasChildNodes()) return;
+        var range = document.createRange();
+        var selection = window.getSelection();
+        range.setStartBefore(focusedCell.childNodes[0]);
+        range.setEndAfter(focusedCell.childNodes[0]);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        focusedCell.scroll(9999,0);
+    }
+    preventEventDefault(event) {
+        event.preventDefault();
+    }
+
+    //--Construstion function--
+    applyTableType() {
+        if(this._tableType[0] == 'planning' && this._tableType[1] == 'income'){
+            this._dataHierarchy = null;
+            this._dataItemFields = null;
+            this._itemCellComposition = null;
+            this._itemCellFieldMatch = null;
+        }else if(this._tableType[0] == 'planning' && this._tableType[1] == 'expenditure'){
+            this._dataHierarchy = null;
+            this._dataItemFields = null;
+            this._itemCellComposition = null;
+            this._itemCellFieldMatch = null;
+        }else if(this._tableType[0] == 'closing' && this._tableType[1] == 'income'){
+            this._dataHierarchy = ['기구', '출처'];
+            this._dataItemFields = ['항목', '코드', '예산', '결산', '집행률', '비고'];
+            this._itemCellComposition = [this.DRAGHANDLE, '항목', '코드', '예산', '결산', '집행률', '비고'];
+            this._itemCellFieldMatch = [null, 0, 1, 2, 3, 4, 5];
+        }else if(this._tableType[0] == 'closing' && this._tableType[1] == 'expenditure'){
+            this._dataHierarchy = ['기구', '담당', '대항목'];
+            this._dataItemFields = ['항목', '출처', '코드', '예산', '결산', '집행률', '비고'];
+            this._itemCellComposition = ['출처', this.DRAGHANDLE, '항목', '코드', '예산', '결산', '집행률', '비고'];
+            this._itemCellFieldMatch = [1, null, 0, 2, 3, 4, 5, 6];
+        }
+    }
+    createColgroup() {
+        var colgroup = document.createElement('colgroup');
+        for(var i = 0; i < this.data.hierarchy.length; i++) {
+            if(this._tableType[1]==this.EXPENDITURE && i > 0) {
+                var col = document.createElement('col');
+                col.classList.add(this._HTMLColPrefix + this.DRAGHANDLE);
+                colgroup.append(col);
+            }
+            var col = document.createElement('col');
+            col.classList.add(this._HTMLColPrefix + this.data.hierarchy[i]);
+            colgroup.append(col);
+        }
+        for(var i = 0; i < this._itemCellComposition.length; i++) {
+            var col = document.createElement('col');
+            col.classList.add(this._HTMLColPrefix + this._itemCellComposition[i]);
+            colgroup.append(col);
+        }
+        return colgroup;
+    }
+    createThead() {
+        var thead = document.createElement('thead');
+
+        var firstRow = document.createElement('tr');
+        var firstRowTh = document.createElement('th');
+
+        var title = '';
+        if(this._tableType[1]==this.INCOME) title = '수입';
+        else if(this._tableType[1]==this.EXPENDITURE) title = '지츨';
+
+        var addedColCount = 0;
+        if(this._tableType[1]==this.EXPENDITURE) addedColCount = 2;
+
+        firstRowTh.textContent = title;
+        firstRowTh.setAttribute('colspan', this.data.hierarchy.length + this._itemCellComposition.length + addedColCount);
+        firstRow.append(firstRowTh);
+
+        var secondRow = document.createElement('tr');
+        for(var i = 0; i < this.data.hierarchy.length; i++) {//class rows
+            var td = document.createElement('td');
+            td.textContent = this.data.hierarchy[i];
+            td.classList.add(this._HTMLHeadPrefix + this.data.hierarchy[i]);
+            secondRow.append(td);
+            if(this._tableType[1]==this.EXPENDITURE && i > 0)
+                td.setAttribute('colspan', '2');
+        }
+        for(var i = 0; i < this._itemCellComposition.length; i++){//item rows
+            var td = null;
+            if(this._itemCellComposition[i] != this.DRAGHANDLE) {
+                td = document.createElement('td');
+                td.textContent = this._itemCellComposition[i]
+                td.classList.add(this._HTMLHeadPrefix + this._itemCellComposition[i]);
+                secondRow.append(td);
+            }
+            if(i >= 1 && this._itemCellComposition[i-1] == this.DRAGHANDLE)
+                td.setAttribute('colspan', '2');
+        }
+
+        thead.append(firstRow);
+        thead.append(secondRow);
+        return thead;
+    }
+
+    //--Item Percent--
+    calculatePercent(row) {
+        if(row.getElementsByClassName(this._HTMLPrefix+this._data.itemFields[4]).length==0) return;//item not load
+        var budgetCell = row.getElementsByClassName(this._HTMLPrefix+'예산')[0];
+        var settlementCell = row.getElementsByClassName(this._HTMLPrefix+'결산')[0];
+        var percntCell = row.getElementsByClassName(this._HTMLPrefix+'집행률')[0];
+
+        if(budgetCell.hasAttribute('number-data') && settlementCell.hasAttribute('number-data')) {
+            if(budgetCell.getAttribute('number-data') == 0) percntCell.textContent = '신설';
+            else {
+                var budget = Number(budgetCell.getAttribute('number-data'));
+                var settlement = Number(settlementCell.getAttribute('number-data'));
+                percntCell.textContent = parseFloat(settlement/budget*100).toFixed(2)+'%';
+            }
+        } else {percntCell.textContent = '';}
+    }
+
+    //--Cell formatting functions--    
+    handlePaste(pasteEvent, isNewlineAllowed = false) {
+        var paste = pasteEvent.clipboardData.getData('text');//IE not supported
+        var selection = window.getSelection();
+
+        if(!isNewlineAllowed)
+            paste = paste.replace(/[\f\n\r\t\v\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]/gm, '');
+
+        if (!selection.rangeCount) return false;
+        selection.deleteFromDocument();
+        selection.getRangeAt(0).insertNode(document.createTextNode(paste));
+        // document.execCommand("insertHTML", false, text);
+
+        pasteEvent.preventDefault();
+    }
+    preventEnter(keyEvent) {
+        if(keyEvent.keyCode == 13) keyEvent.returnValue = false;
+    }
+    getSelectionLength() {
+        var range = window.getSelection().getRangeAt(0);
+        return range.endOffset - range.startOffset;
+    }
+    markSelectionPos(node) {
+        var range = window.getSelection().getRangeAt(0);
+        node.setAttribute('original-range-start-offset', range.startOffset);
+        node.setAttribute('original-range-end-offset', node.textContent.length - range.endOffset);
+    }
+    restoreSelection(node, rangeStartDiff = 0, rangeEndDiff = rangeStartDiff) { //rangeEndDiff: difference of offset of rangeEnd from node end, right is positive direction
+        if(!node.hasChildNodes()) return;
+        var range = document.createRange();
+        var selection = window.getSelection();
+        var rangeStart0 = node.getAttribute('original-range-start-offset')*1;
+        var rangeEnd0 = node.getAttribute('original-range-end-offset')*1;
+        range.setStart(node.childNodes[0], rangeStart0 + rangeStartDiff);
+        range.setEnd(node.childNodes[0], node.textContent.length - rangeEnd0 + rangeEndDiff);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        node.removeAttribute('original-range-start-offset');
+        node.removeAttribute('original-range-end-offset');
+    }
+    removeExceptNum(cell) {
+        if(!cell.hasChildNodes()) return false;
+        cell.textContent = cell.textContent.replace(/[^0-9]/gm, '');
+    }
+    amountCellPrepareEdit(focusEvent) {
+        var amountCell = focusEvent.target;
+        amountCell.textContent = amountCell.getAttribute('number-data');
+        amountCell.style.textAlign = "left"
+    }
+    amountCellFormat(amountCell) {
+        this.removeExceptNum(amountCell);
+
+        if(amountCell.textContent == '' || parseInt(amountCell.textContent) == '0') {
+            this.snycCellToData(amountCell, 0);
+            amountCell.setAttribute('number-data', 0);
+            amountCell.textContent = '-';
+            amountCell.style.textAlign = "center"
+        }else{// if(isFinite(amountCell.textContent))
+            if(amountCell.textContent.length > 15) alert('정밀도 한계 초과');
+            this.snycCellToData(amountCell);
+            var formatter = new Intl.NumberFormat('ko-KR', {style: 'currency', currency: 'KRW',});
+            amountCell.setAttribute('number-data', amountCell.textContent*1);
+            amountCell.textContent = formatter.format(amountCell.textContent);
+            amountCell.style.textAlign = "left"
+        }
+    }
+    amountCellAfterEdit(event) { //Only in case of keyboard input
+        event = event;//IE not supported
+        if((event.ctrlKey||event.metaKey) && event.keyCode==86) return;//prevent function at ctrl+v
+        if(event.shiftKey && (event.keyCode==37||event.keyCode==39)) return;//prevent function at shift+arrow
+        if(event.keyCode==9) return;//prevent function at tab
+        var cell = event.target;
+        var originalLength = cell.textContent.length;
+        this.markSelectionPos(cell);
+        this.removeExceptNum(cell);
+        this.restoreSelection(cell, cell.textContent.length - originalLength, 0);
+        this.calculatePercent(cell.parentElement);
+    }
+    amountCellAfterPaste(event) {
+        event = event;//IE not supported
+        var cell = event.target;
+        var originalLength = cell.textContent.length;
+        var selectionLength = this.getSelectionLength();
+        this.markSelectionPos(cell);
+        this._boundHandlePaste(event);
+        this.removeExceptNum(cell);
+        this.restoreSelection(cell, selectionLength + cell.textContent.length - originalLength, 0);
+        this.calculatePercent(cell.parentElement);
+    }
+    setAmountCellAutoFormatting(amountCell) {
+        amountCell.addEventListener('focus', this._boundAmountCellPrepareEdit);
+        amountCell.addEventListener('blur', () => {this.amountCellFormat(amountCell);});//includes updating datum
+        amountCell.addEventListener('keypress', (e) => {if((e.keyCode < 48) || (e.keyCode > 57)) e.returnValue = false;}); // keydown, keyup, compositionupdate
+        amountCell.addEventListener('keyup', this._boundAmountCellAfterEdit);
+        amountCell.addEventListener('paste', this._boundamountCellAfterPaste);
+    }
+
+    //--Generateing Table--
+    setItemCell(cell, itemPath, itemCellType){
+        var itemCellIdx = this._itemCellComposition.indexOf(itemCellType);
+        var itemFieldIdx = this._itemCellFieldMatch[itemCellIdx];
+        if(itemCellIdx==-1) return;
+
+        cell.textContent = this._data.getItem(itemPath)[itemFieldIdx];
+        cell.setAttribute('feild-idx', itemFieldIdx);
+        switch(itemCellType){
+        case '항목'://항목
+            cell.classList.add(this._HTMLPrefix + itemCellType);
+            cell.setAttribute('contenteditable', true);
+            cell.addEventListener('focus', this.selectOnFocus);
+            cell.addEventListener('blur', (e) => {
+                this.snycCellToData(e.target);
+                e.target.scroll(0,0);
+            });
+            cell.addEventListener('keypress', this._boundPreventEnter);//prevent Enter
+            cell.addEventListener('paste', this._boundHandlePaste);
+            cell.addEventListener('drop', this.preventEventDefault);//drag-drop paste
+            break;
+        case '코드'://코드
+            cell.classList.add(this._HTMLPrefix + itemCellType);
+            break;
+        case '예산'://예산
+            cell.classList.add(this._HTMLPrefix + itemCellType);
+            cell.setAttribute('contenteditable', true);
+            this.amountCellFormat(cell);//initial formatting
+            this.setAmountCellAutoFormatting(cell);//includes updating datum
+            cell.addEventListener('focus', this.selectOnFocus);
+            cell.addEventListener('blur', (e) => {e.target.scroll(0,0);});
+            cell.addEventListener('drop', this.preventEventDefault);//drag-drop paste
+            break;
+        case '결산'://결산
+            cell.classList.add(this._HTMLPrefix + itemCellType);
+            cell.setAttribute('contenteditable', true);
+            this.amountCellFormat(cell);//initial formatting
+            this.setAmountCellAutoFormatting(cell);//includes updating datum
+            cell.addEventListener('focus', this.selectOnFocus);
+            cell.addEventListener('blur', (e) => {e.target.scroll(0,0);});
+            cell.addEventListener('drop', this.preventEventDefault);//drag-drop paste
+            break;
+        case '집행률'://집행률
+            cell.classList.add(this._HTMLPrefix + itemCellType);
+            this.calculatePercent(cell.parentElement);//initial formatting
+            break;
+        case '비고'://비고
+            cell.classList.add(this._HTMLPrefix + itemCellType);
+            cell.setAttribute('contenteditable', true);
+            cell.addEventListener('blur', (e) => {this.snycCellToData(e.target)});
+            cell.addEventListener('blur', (e) => {e.target.scroll(0,0);});
+            cell.addEventListener('paste', (e) => {this._boundHandlePaste(e, true);});
+            cell.addEventListener('drop', this.preventEventDefault);//drag-drop paste
+            break;
+        }
+        return cell;
+    }
+    setFunctionCell(cell, cellType, dataPath){
+        switch(cellType){
+        case this.DRAGHANDLE://드레그
+            cell.classList.add(this.DRAGHANDLE);
+            cell.setAttribute('path', JSON.stringify(dataPath));
+            cell.textContent = '⋮';
+            break;
+        }
+        return cell;
+    }
+    setClassCell(cell, classPath){
+        cell.id = this._HTMLIDPrefix + classPath;
+        cell.textContent = this._data.getClassName(classPath);
+        cell.setAttribute('rowspan', Math.max(1, this.countClassRows(classPath)));
+        cell.classList.add(this._HTMLPrefix + this.data.hierarchy[classPath.length-1], this._HTMLPrefix + classPath);
+        return cell;
+    }
+    createItemCells(rowPosition, itemPath) {
+        var row = this._tableElement.rows[rowPosition];
+        for(let i = 0; i < this._itemCellComposition.length; i++) {
+            if (this._itemCellComposition[i].localeCompare(this.DRAGHANDLE) == 0)
+                this.setFunctionCell(row.insertCell(), this.DRAGHANDLE, itemPath);
+            else
+                this.setItemCell(row.insertCell(), itemPath, this._itemCellComposition[i]);
+        }
+    }
+    createEmptyClassPlaceholderCell(row, classPath) {
+        var colPerHierarchyLevel = 1;
+        if(this._tableType[1].localeCompare(this.EXPENDITURE) == 0) colPerHierarchyLevel = 2;
+        var restColCount = (this._data.hierarchy.length - classPath.length) * colPerHierarchyLevel + this._itemCellComposition.length;
+        var cell = row.insertCell();
+        cell.setAttribute('colspan', restColCount);
+        cell.classList.add(this.EMPTYCELL);
+        cell.textContent = 'empty';
+        row.classList.add(this.EMPTYROW + '-' + classPath);
+        row.classList.add(this.EMPTYROW);
+        row.setAttribute('path', JSON.stringify(classPath));
+    }
+    createClassCell(rowPosition, classPath) {
+        if(classPath.length > this._data.hierarchy.length) return false;//class
+
+        var row = this._tableElement.rows[rowPosition];
+        if(classPath.length > 1 && this._tableType[1]==this.EXPENDITURE) {
+            var dragCell = this.setFunctionCell(row.insertCell(), this.DRAGHANDLE, classPath).setAttribute('rowspan', Math.max(1, this.countClassRows(classPath)));
+        }
+        var cell = this.setClassCell(row.insertCell(), classPath)
+        if(classPath.length > 1 && this._tableType[1]==this.EXPENDITURE) cell.classList.add('no-left-border');
+
+        var childPosition = rowPosition;
+        var childrenCount = this._data.countSubclass(classPath);
+        var areChildrenClass = classPath.length < this._data.hierarchy.length;
+
+        if(childrenCount == 0) {
+            this.createEmptyClassPlaceholderCell(row, classPath);
+        } else {
+            for(let i = 0; i < childrenCount; i++) {
+                var childDataPath = classPath.concat([i]);
+                if(areChildrenClass) {//children are also class
+                    this.createClassCell(childPosition, childDataPath);
+                    childPosition += this.countClassRows(childDataPath);
+                }else{//children are item
+                    this.createItemCells(childPosition, childDataPath);
+                    childPosition++;
+                }
+            }
+        }
+    }
+    createRowsRecursion(classPath) {
+        var accTbody = this._tableElement.tBodies[0];
+        if(this._data.countSubclass(classPath) != 0) {
+            if(classPath.length == this._data._hierarchy.length){//lowest class
+                for(var i = 0; i < this._data.countSubclass(classPath); i++) {
+                    var row = accTbody.insertRow();
+                    row.id = this._RowIDPrefix + classPath.concat([i]);
+                    row.setAttribute('path', JSON.stringify(classPath.concat([i])));
+                    row.classList.add(this._HTMLItemClass);
+                }
+            } else {
+                for(let i = 0; i < this._data.countSubclass(classPath); i++)
+                    this.createRowsRecursion(classPath.concat([i]));
+            }
+        } else {
+            var row = accTbody.insertRow();
+            row.id = this._RowIDPrefix + classPath;
+        }
+    }
+    readDataAndSet() {
+        var accTbody = document.createElement('tbody');
+        this._tableElement.append(accTbody);
+        this.createRowsRecursion([0]);
+        this._data.reassignItemCodes();
+        var startingRowPosition = 2;//row that item starts
+        this.createClassCell(startingRowPosition, [0]);
+        var incomeDrag = new dragHandler(this);
+    }
+    rereadTable() { //Read and draw table again.
+        this._tableElement.tBodies[0].remove();
+        this.readDataAndSet();
+    }
+
+    //--Show/hide row--
+    countColumShow() {
+        var count = 0;
+        for(var i = 0; i < this._columnShow.length; ++i)
+            if(this._columnShow[i]) count++;
+        return count;
+    }
+    showHideCol(colType, isShow) {
+        var cellsToHide = this._tableElement.getElementsByClassName(this._HTMLPrefix + colType);
+        var headCellToHide = this._tableElement.getElementsByClassName(this._HTMLHeadPrefix + colType);
+        var colToHide = this._tableElement.getElementsByClassName(this._HTMLColPrefix + colType);
+        var columnIdx = this.data.hierarchy.length + this._itemCellComposition.indexOf(colType);
+        var settingValue = '';
+        if(!isShow) settingValue = 'none';
+
+        for(var i = 0; i < cellsToHide.length; ++i) cellsToHide[i].style.display = settingValue;
+        headCellToHide[0].style.display = settingValue;
+        colToHide[0].style.display = settingValue;
+        this._columnShow[columnIdx] = isShow;
+        this._tableElement.tHead.rows[0].cells[0].setAttribute('colspan', this.countColumShow());
+    }
+    toggleShowHideCol(colType){
+        var columnIdx = this.data.hierarchy.length + this._itemCellComposition.indexOf(colType);
+        this.showHideCol(colType, !this._columnShow[columnIdx]);
+    }
+}
+
+
+
+var incomeDataSource1 = 
+        [
+            ['r1c2', 
+                [
+                    ['학생', [
+                        ['이월금', 'AA', '4742007', '4742007', '', ''],
+                        ['학생회비 지원금', 'AB', '3046816', '0', '', '']
+                    ]]
+                    , 
+                    ['본회계', [
+                        ['중앙집행위원회 LT 지원금', 'BA', '1570000', '516300', '', ''],
+                        ['중앙운영위원회 LT 지원금', 'BB', '1330000', '0', '', '']
+                    ]], 
+                    ['자치', [
+                        ['이월금', 'CA', '26283551', '26283551', '', ''],
+                        ['가상화폐 투자 수익금', 'CB', '0', '1002052847973', '', '']
+                    ]]
+                ]
+            ]
+        ];
+var incomeTable1 = new accTable('income-table1', document.getElementById('ui-container'), ['closing','income'], incomeDataSource1);
+
+var expenditureDataSource1 = 
+        [
+            ['r1c2',[
+                    ['사무국', [
+                            ['사무 비용', [
+                                ['사무 비품', '학생', '', '120000', '80000', '', ''],
+                                ['응접 다과', '학생', '', '50000', '50000', '', ''],
+                                ['사무실 오락기 설치', '학생', '', '1005000', '1004321', '', '']
+                            ]],
+                            ['회의 보조', [
+                                ['회의 보조 수당', '학생', '', '80000', '80000', '', ''],
+                                ['축하 공연 섭외', '학생', '', '16000000', '4500', '', '']
+                            ]]
+                    ]],
+                    ['정책국', [
+                            ['과학생회장 인기투표', [
+                                
+                            ]]
+                    ]],
+                    ['복지국', [
+                            ['학생 복지관 겁립', [
+                                ['공사 착수금', '학생', '', '250000000', '250000000', '', ''],
+                                ['착공식', '학생', '', '280000000', '270800000', '', '']
+                            ]],
+                            ['전체 학우 만찬', [
+                                ['출장 뷔페', '학생', '', '1200', '1400', '', '']
+                            ]]
+                    ]]
+            ]]
+        ];
+var expenditureTable1 = new accTable('expenditure-table1', document.getElementById('ui-container'), ['closing','expenditure'], expenditureDataSource1);
+
+
+//--Adding item--
+function addNewItem() {
+    //to be developed: add new item in data
+}
+
+
+
+document.getElementById('button').addEventListener('click', () => {
+    // addNewItem();
+    incomeData1.removeClass([0,1]);
+    incomeTable1.rereadTable();
+});
+
+document.getElementById('reload-button').addEventListener('click', () => {
+    incomeTable1.rereadTable();
+});
+
+document.getElementById('hide-button').addEventListener('click', () => {
+    incomeTable1.toggleShowHideCol(document.getElementById('hide-target').value);
+});
+
+
+
+// $('table').hover(function(e){
+//     if(  e.offsetX <= parseInt($(this).css('borderLeftWidth'))){
+//         alert('hover on the left border!');
+//     }
+// });
+
+
+
+

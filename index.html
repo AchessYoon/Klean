@@ -1,0 +1,251 @@
+<!DOCTYPE html><!--Project KLean-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <!-- <link rel="stylesheet" type="text/css" href="./Semantic-UI-CSS-master/semantic.min.css"> -->
+    <!-- <script src="./Semantic-UI-CSS-master/semantic.min.js"></script> -->
+    <!-- <script src="./table-dragger.min.js"></script> --><!-- working command -->
+    <!-- <script src="./table-dragger/dist/table-dragger.min.js"></script> -->
+    <style>
+      /* * {
+        box-sizing: border-box;
+      }*/
+
+      :root {
+        --col-기구-w: 4rem;
+        --col-담당-w: 4rem;
+        --col-출처-w: 4rem;
+        --col-drag-w: 1rem;
+        --col-대항목-w: 12rem;
+        --col-항목-w: 16rem;
+        --col-코드-w: 4rem;
+        --col-예산-w: 8rem;
+        --col-결산-w: 8rem;
+        --col-집행률-w: 5rem;
+        --col-비고-w: 18rem;
+      }
+
+      .acc-table ::selection{
+        background: #34495e;
+        color: white;
+      }
+
+      h1{
+        text-align: center;
+      }
+
+      .acc-table{
+        border-collapse: collapse;
+        /*margin: auto;*/
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 3rem;
+        margin-bottom: 3rem;
+        border-color: #AAAAAA;
+        table-layout: fixed;
+
+        /*width: calc(var(--col-기구-w) +
+                    var(--col-출처-w-w) +
+                    var(--col-drag-w) +
+                    var(--col-항목-w) +
+                    var(--col-코드-w) +
+                    var(--col-예산-w) +
+                    var(--col-결산-w) +
+                    var(--col-집행률-w) +
+                    var(--col-비고-w));*/
+        width: 0rem;
+      }
+
+      #drag-elem{
+        margin-top: auto;
+        margin-bottom: auto;
+      }
+
+      .acc-col-기구{width: var(--col-기구-w);}
+      .acc-col-담당{width: var(--col-담당-w);}
+      .acc-col-출처{width: var(--col-출처-w);}
+      .acc-col-drag-handle-cell{width: var(--col-drag-w);}
+      .acc-col-대항목{width: var(--col-대항목-w);} 
+      .acc-col-항목{width: var(--col-항목-w);} 
+      .acc-col-코드{width: var(--col-코드-w);}
+      .acc-col-예산{width: var(--col-예산-w);}
+      .acc-col-결산{width: var(--col-결산-w);}
+      .acc-col-집행률{width: var(--col-집행률-w);}
+      .acc-col-비고{width: var(--col-비고-w);}
+
+      .acc-table tr{
+        height: 20px;
+      }
+
+      .acc-table th{
+        border: 1px solid #444444;
+        text-align: center;
+        padding: 0.3rem;
+      }
+
+      .acc-table td{
+        border: 1px solid #444444;
+        text-align: center;
+        white-space: nowrap;
+        /*overflow: hidden;*/
+        overflow-x: auto;
+        padding: 0.3rem;
+      }
+
+      .acc-table td::-webkit-scrollbar{
+        display: none;
+      }
+
+      .acc-table .drag-handle-cell{
+        -webkit-user-select: none;
+        cursor: pointer;
+        border-right: none;
+        color: grey;
+      }
+
+      .acc-table .acc-대항목{
+        text-align: left;
+      }
+
+      .acc-table .acc-항목{
+        text-align: left;
+        border-left: none;
+      }
+
+      .acc-table .acc-예산{
+        text-align: left;
+      }
+
+      .acc-table .acc-결산{
+        text-align: left;
+      }
+
+      .acc-table .acc-비고{
+        text-align: left;
+      }
+
+      .acc-table .no-left-border{
+        border-left: none;
+      }
+
+      #drag-elem td{
+        background: white;
+        opacity: 0.7;
+      }
+
+      #drag-elem .invisable-cell{
+        background: none;
+        border: none;
+        background-color: none;
+      }
+
+      /*#drag-elem>td:nth-child(1){width: var(--col-기구-w);} 
+      #drag-elem>td:nth-child(2){width: var(--col-출처-w);} 
+      #drag-elem>td:nth-child(3){width: var(--col-drag-w); border-right: white;} 
+      #drag-elem>td:nth-child(4){width: var(--col-항목-w); border-left: white;} 
+      #drag-elem>td:nth-child(5){width: var(--col-코드-w);} 
+      #drag-elem>td:nth-child(6){width: var(--col-예산-w);} 
+      #drag-elem>td:nth-child(7){width: var(--col-결산-w);} 
+      #drag-elem>td:nth-child(8){width: var(--col-집행률-w);} 
+      #drag-elem>td:nth-child(9){width: var(--col-비고-w);}*/
+    </style>
+  </head>
+
+  <body>
+    <div class="ui container">
+      <h1>Table test</h1>
+      <div id="ui-container">
+      </div>
+      <button id="button">button</button><br>
+      <button id="reload-button">reload</button><br>
+      <input id="hide-target" type="text" size="6">
+      <button id="hide-button">show/hide</button>
+    </div>
+    <!-- <div id="posTest" style="background: blue; color: white; width: 20px">++<br>++</div> -->
+    <!-- <table id="tabeTest">
+      <tr>
+        <td class="tabeTestCell" contenteditable="true" style=""></td>
+      </tr>
+    </table> -->
+    <script type="module" src="./index.js"></script>
+  </body>
+
+</html>
+
+
+<!-- 개발 계획
+  (후순위) 숫자간에 연속으로 붙여넣기 할 경우 숫자 아닌 문자가 남는 경우 있음
+  수정이력
+  항목에 줄바꿈/tab 막기
+  엔터/화살표로 셀 이동
+  셀 폭 고정과 줄바꿈 설정
+  비고에 줄바꿈 가져오기 내보내기에서 작동 확인
+  분류단위 이동 기능 추가
+  table 대신 tbody 사용 검토/drag로 thead 침범하는 경우 대비
+  drag 끝 이벤트와 mouse up 이벤트를 모두 기다리는 이벤트를 새로 만들어 싱크로 문제 해경
+  이벤트/노드 접근 범위를 테이블 내로 한정(documet/IncomeTable 제거)
+  출처 hover 하면 merge 풀리게
+  분류가 0개 될때
+  분류 내 같은 이름의 항목 방지
+  분류 이동해서 같은 이름의 항목 방지
+  이동 드레그 중 ui selecting 방지
+  class 단위 이동
+  item multi select, function
+  일정 영역 나가면 drag 종료
+  table-data관계
+  계층구조(기구(기구명)-출처(출처명)-항목(항목명))
+  텍스트 소스 변수로 통일(출처명 등)
+  cel idx로 접근할 필요 없도록 요소 이름을 통한 접근 방법으로 통일
+  합계 row 생성
+  input/read/addRow 할 때마다 data 갱신
+  invalid input/readIn alert
+  항목 코드 자동 생성
+  % 계산
+  줄 앞에/뒤에 추가
+  hover 로 overflow text 표시하기
+  버튼으로 줄 순서 변경
+  단어 띄어쓰기 구분 컨벤션
+  따옴표 컨벤션
+  관리자모드(단체명 수정,양식 수정)
+  경계에서 선택
+  자동 완성 끄기
+  focus 시각효과 끄기
+  출처/분류 드롭다운
+  불러오기 내보내기
+  표 일부 복사 붙여넣기
+  인쇄
+  서버
+  update code: table이 아닌 data를 소스로 작업하는 방법 검토
+  text drag drop 활성화
+  cell double 
+  on border 에서 우측에 추가 버튼 노출
+  숫자 cell 영어 누르면 selection 오류
+  overflow hidden 적용시 짤리는 쪽 padding 없어짐
+
+  add class - empty
+add class - unassigned, empty
+add item - unassigned
+
+single select만 허용
+change 이벤트 활용 검토
+querySelector 도입 여부
+
+유효 입력
+영어 입력
+한글 입력
+펑션 등 입력
+컨르롤 알트 등 입력
+select 상태로 수정
+붙여 넣기
+select 상태로 붙여 넣기
+
+  data 조건
+  - 빈 class 없을 것
+  - 정해진 구조에 맞을것
+
+  -->
+
