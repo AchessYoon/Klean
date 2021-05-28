@@ -1,27 +1,21 @@
 'use strict';
 //window.onload = function() {}
 
-
-function isArrayEq(arr1, arr2){
-    if(arr1.length != arr2.length) return false;
-    for(var i = 0; i < arr1.length; i++)
-        if(arr1[i] != arr2[i]) return false;
-    return true;
-}
-
 function copyArray(arr){
     return arr.slice();
     // var newArr = [];
-    // for(var i = 0; i < arr.length; i++)
-    //     newArr.push(arr[i]);
+    // for(var i = 0; i < arr.length; i++) newArr.push(arr[i]);
     // return newArr;
 }
 
-function isFirstPathCommingEarlier(arr1, arr2){
+function comparePath(arr1, arr2){
     if(arr1.length != arr2.length) return null;
-    for(var i = 0; i < arr1.length; i++)
-        if(arr1[i] < arr2[i]) return true;
-    return false;
+    var eq = true;
+    for(var i = 0; i < arr1.length; i++) {
+        if(arr1[i] < arr2[i]) return 1;
+        else if(arr1[i] > arr2[i]) return -1;
+    }
+    return 0;
 }
 
 
@@ -133,18 +127,29 @@ class accData {
         if(to < from && fromPath[pathLength-2] == toPath[pathLength-2]) fromPath[pathLength-1]++;
         this.removeItem(fromPath, true);
     }
-    moveClass(fromPath, toPath) {
-        console.log(fromPath, toPath);
+    isSibling(originalPath1, originalPath2) {
+        var path1 = copyArray(originalPath1);
+        var path2 = copyArray(originalPath2);
+        if (path1.length != path2.length) return false;
+        var len = path1.length;
+        if (comparePath(path1.slice(0, len-1), path2.slice(0, len-1))==0) return true;
+        return false;
+    }
+    moveSubdata(fromPath, toPath) {
+        // console.log(fromPath, toPath);
+        if (fromPath.length != toPath.length) return;
+
         var fromPathCopy = copyArray(fromPath);
         var toPathCopy = copyArray(toPath);
-
         var pathLength = toPathCopy.length;
-        if (fromPathCopy[1] < toPathCopy[1] || 
-            (fromPathCopy[1] == toPathCopy[1] && fromPathCopy[2] < toPathCopy[2]) || 
-            (fromPathCopy[1] == toPathCopy[1] && fromPathCopy[2] == toPathCopy[2] && fromPathCopy[3] < toPathCopy[3])) 
-                toPathCopy[pathLength-1]++;
+        if (this.isSibling(fromPathCopy, toPathCopy) && fromPathCopy[pathLength-1] < toPathCopy[pathLength-1])
+            toPathCopy[pathLength-1]++;
         
-        var insertingData = [this.getClassName(fromPathCopy), this.getClassData(fromPathCopy)];
+        var insertingData = null;
+        if(pathLength == this.hierarchy.length+1)//item data
+            insertingData = this.getItem(fromPathCopy);
+        else
+            insertingData = [this.getClassName(fromPathCopy), this.getClassData(fromPathCopy)];
         this.insertClass(toPathCopy, insertingData);
         if(fromPathCopy[pathLength-2] == toPathCopy[pathLength-2] && fromPathCopy[pathLength-1] > toPathCopy[pathLength-1]) fromPathCopy[pathLength-1]++;
         this.removeClass(fromPathCopy, true);
@@ -231,10 +236,9 @@ class dragHandler {
         this._boundUpdateWhileDrag = this.updateWhileDrag.bind(this);
         this._boundUpdateAfterDrag = this.endDrag.bind(this);
 
-        this._chunkToMove = null;
-        this._chunkLength = null;
-        this._targetPath = null;
-        this._dragElem = null;
+        this._objChunk = null;
+        this._objPath = null;
+        this._floatingChunk = null;
         this._mouseDownX = 0;
         this._mouseDownY = 0;
 
@@ -250,33 +254,35 @@ class dragHandler {
         for(let i = 0; i < dragHandles.length; i++) 
             dragHandles[i].addEventListener('mousedown', this._boundStartDrag);
     }
-    getStartingRowOfChunk(chunkPath) {
+    getFirstRowOfChunk(chunkPath) {
         console.log(chunkPath);
-        var startingRowPath = chunkPath.slice();
-        var startingRow = null;
-        for(; startingRowPath.length <= this._table.data.hierarchy.length + 1; startingRowPath.push(0)) {
-            startingRow = document.getElementById(this._table.RowIDPrefix + startingRowPath);
-            console.log(startingRow);
-            if(startingRow) return startingRow;
+        var firstRowPath = copyArray(chunkPath);
+        var firstRow = null;
+        for(; firstRowPath.length <= this._table.data.hierarchy.length + 1; firstRowPath.push(0)) {
+            firstRow = document.getElementById(this._table.RowIDPrefix + firstRowPath);
+            if(firstRow) return firstRow;
         }
     }
-    getRowChunk(row, length = 1) {
+    getChunk(chunkPath) {
         var chunk = [];
-        var rowToPush = row;
+        var rowToPush = this.getFirstRowOfChunk(chunkPath);//initializing as first row of chunk
         chunk.push(rowToPush);
-        for(var i = 1; i < length; i++) {
-            rowToPush = rowToPush.nextElementSibling;
-            chunk.push(rowToPush);
+        if(chunkPath.length < this._table.data.hierarchy.length + 1) {//class chunk
+            var length = this._table.countClassRows(chunkPath);
+            for(var i = 1; i < length; i++) {
+                rowToPush = rowToPush.nextElementSibling;
+                chunk.push(rowToPush);
+            }
         }
         return chunk;
     }
     createDragElem() {
-        this._dragElem = document.createElement('Table');
-        this._dragElem.append(this._table.createColgroup());
+        this._floatingChunk = document.createElement('Table');
+        this._floatingChunk.append(this._table.createColgroup());
 
-        for(var i = 0; i <this._chunkToMove.length; i++) {
+        for(var i = 0; i <this._objChunk.length; i++) {
             console.log(1111111);
-            var dragElemRow = this._chunkToMove[i].cloneNode(true);
+            var dragElemRow = this._objChunk[i].cloneNode(true);
 
             if(this._table.mode[1]==this.INCOME) {
                 if(dragElemRow.cells[0].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[0]))
@@ -291,14 +297,14 @@ class dragHandler {
                 if(dragElemRow.cells[0].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[0]))
                     dragElemRow.cells[0].remove();
                 dragElemRow.insertCell(0).classList.add(this.INVISABLE);
-                if(this._targetPath.length >= 3){
+                if(this._objPath.length >= 3){
                     if(dragElemRow.cells[2].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[1])){
                         dragElemRow.cells[1].remove();
                         dragElemRow.cells[1].remove();
                     }
                     dragElemRow.insertCell(0).classList.add(this.INVISABLE);
                     dragElemRow.insertCell(0).classList.add(this.INVISABLE);
-                    if(this._targetPath.length >= 4){
+                    if(this._objPath.length >= 4){
                         if(dragElemRow.cells[4].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[2])) {
                             dragElemRow.cells[3].remove();
                             dragElemRow.cells[3].remove();
@@ -309,39 +315,37 @@ class dragHandler {
                 }
             }
 
-            this._dragElem.append(dragElemRow);
+            this._floatingChunk.append(dragElemRow);
         }
 
-        this._dragElem.id = 'drag-elem';
-        this._dragElem.classList.add(this._table.HTMLTableClass);
+        this._floatingChunk.id = 'drag-elem';
+        this._floatingChunk.classList.add(this._table.HTMLTableClass);
 
-        document.getElementById('ui-container').appendChild(this._dragElem);
+        document.getElementById('ui-container').appendChild(this._floatingChunk);
 
-        this._dragElem.style.position = 'fixed';
-        this._dragElem.style.top = this._chunkToMove[0].getBoundingClientRect().y + 'px';
-        this._dragElem.style.left = this._chunkToMove[0].getBoundingClientRect().x + 'px';
+        this._floatingChunk.style.position = 'fixed';
+        this._floatingChunk.style.top = this._objChunk[0].getBoundingClientRect().y + 'px';
+        this._floatingChunk.style.left = this._objChunk[0].getBoundingClientRect().x + 'px';
 
-        // this._dragElem.style.left = '50%';
-        // this._dragElem.style.marginLeft = (-this._dragElem.offsetWidth/2) + 'px';
+        // this._floatingChunk.style.left = '50%';
+        // this._floatingChunk.style.marginLeft = (-this._floatingChunk.offsetWidth/2) + 'px';
 
         document.dispatchEvent(new MouseEvent('mousemove',
             { view: window, cancelable: true, bubbles: true }
         ));
 
-        return this._dragElem;
+        return this._floatingChunk;
     }
     startDrag(event) {
         if(event.button != 0) return true;
 
-        document.onselectstart = () => {return false;}//prevent error by drag selection
+        document.onselectstart = () => {return false;}//prevent error might be occured by drag selection
         //document.addEventListener('selectstart', returnFalse);
         // if(this._table.mode[1]==this.EXPENDITURE)
-        this._targetPath = JSON.parse(event.target.getAttribute('path'));
-        if(this._targetPath.length == this._table.data.hierarchy.length+1) this._chunkLength = 0;
-        else this._chunkLength = this._table.countClassRows(this._targetPath);
-        this._chunkToMove = this.getRowChunk(event.target.closest('tr'), this._chunkLength);
+        this._objPath = JSON.parse(event.target.getAttribute('path'));
+        this._objChunk = this.getChunk(this._objPath);
 
-        if(this._chunkToMove) {
+        if(this._objChunk) {
             this.createDragElem();
             this._mouseDownX = event.clientX;
             this._mouseDownY = event.clientY;
@@ -349,78 +353,76 @@ class dragHandler {
             document.addEventListener('mouseup', this._boundUpdateAfterDrag);
         }
     }
-    isMoveCondition(originalPosY, floatingPos, comparingPos){
-        var posCriteria = comparingPos.y + comparingPos.height / 2;
-        if(originalPosY < comparingPos.y) { //getting closer from higer position
+    normalizePath(originalPath) {
+        var path = copyArray(originalPath);
+        var normalPathLen = this._objPath.length;
+        if (normalPathLen < path.length) path = path.slice(0, normalPathLen);
+        else if (normalPathLen - path.length == 1) path.push('empty');
+        return path;
+    }
+    getChunkPos(originalChunkPath) {//only y position and height is valid
+        var chunkPath = copyArray(originalChunkPath);
+        var pathLength = chunkPath.length;
+
+        if(chunkPath[chunkPath.length-1]=='empty')//if row of empty class
+            chunkPath.pop();//get position of higher level class
+
+        if(pathLength == this._table.data.hierarchy.length + 1) {//item chunk
+            return document.getElementById(this._table.RowIDPrefix + chunkPath).getBoundingClientRect();
+        }else{//class chunk
+            var classCell = this._table.DOMElement.getElementsByClassName(this._table.HTMLPrefix + chunkPath)[0];
+            return classCell.getBoundingClientRect();
+        }
+    }
+    isMoveCondition(checkingPath) {
+        var objPos = this._objChunk[0].getBoundingClientRect(),
+            floatingPos = this._floatingChunk.getBoundingClientRect(),
+            checkingPos = this.getChunkPos(checkingPath);
+
+        var posCriteria = checkingPos.y + checkingPos.height / 2;
+        if(objPos.y < checkingPos.y) { //getting closer from higer position
             if(floatingPos.y + floatingPos.height / 2 > posCriteria) return true;
         }else{ //getting closer from lower position
             if(floatingPos.y + floatingPos.height / 2 < posCriteria) return true;
         }
+        // Math.abs(floatingPos.y - rowPos.y) < rowPos.height / 2 //old criteria
         return false;
     }
     moveRow() {
-        if(this._chunkLength == 0) {
-            let floatingPos = this._dragElem.getBoundingClientRect(),
-                currIndex = this._chunkToMove[0].rowIndex - this._table.tHeadLength,
-                rows = this._table.DOMElement.querySelectorAll('tbody tr');
-            for(let i = Math.max(0, currIndex-5); i < Math.min(rows.length, currIndex+5); i++) {
-                let rowPos = rows[i].getBoundingClientRect(),
-                    toIndex = rows[i].rowIndex - this._table.tHeadLength;
+        let objRowPos = this._objChunk[0].rowIndex - this._table.tHeadLength,
+            rows = this._table.DOMElement.querySelectorAll('tbody tr'),
+            checkingRange = {
+                "start": Math.max(0, objRowPos-1),
+                "end": Math.min(rows.length-1, objRowPos+this._objChunk.length+1)
+            };
 
-                if(currIndex != toIndex && Math.abs(floatingPos.y - rowPos.y) < rowPos.height / 2) {
-                    this._table.data.moveItem(currIndex, toIndex);
-                    this._table.rereadTable();
-                    this._chunkToMove[0] = document.getElementById(this._table.RowIDPrefix + this._table.data.getDataPath(toIndex));
-                    break;
-                }
-            }
-        } else {
-            let floatingPos = this._dragElem.getBoundingClientRect(),
-                chunkStartIndex = this._chunkToMove[0].rowIndex - this._table.tHeadLength,
-                rows = this._table.DOMElement.querySelectorAll('tbody tr');
+        for(let i = checkingRange.start; i<=checkingRange.end; i++) {
+            var checkingPath = this.normalizePath(this._table.getRowPath(rows[i]));
+            if (this._objPath.length != checkingPath.length) continue;
 
-            // console.log('---------');
-            // console.log(this._targetPath);
-            for(let i = Math.max(0, chunkStartIndex-5); i < Math.min(rows.length-1, chunkStartIndex+this._chunkToMove.length+4); i++) {
-                var checkingChunkPath = this._table.getRowPath(rows[i]);
-                if (this._targetPath.length < checkingChunkPath.length)
-                    checkingChunkPath = checkingChunkPath.slice(0, this._targetPath.length);
-                var checkingChunkPos = null;
-                if(this._chunkLength == 0) {
-                    checkingChunkPos = this._chunkToMove[0].getBoundingClientRect();
-                } else {
-                    var classCell = this._table.DOMElement.getElementsByClassName(this._table.HTMLPrefix + checkingChunkPath)[0];
-                    checkingChunkPos = classCell.getBoundingClientRect();
-                }
-                var originalPosY = this._chunkToMove[0].getBoundingClientRect().y;
-
-                if(!isArrayEq(this._targetPath, checkingChunkPath) && this.isMoveCondition(originalPosY, floatingPos, checkingChunkPos)) {
-                    this._table.data.moveClass(this._targetPath, checkingChunkPath);
-                    this._table.rereadTable();
-                    this._targetPath = copyArray(checkingChunkPath);
-                    if(isFirstPathCommingEarlier(this._targetPath.slice(0, this._targetPath.length-1), checkingChunkPath.slice(0, checkingChunkPath.length-1)))
-                        this._targetPath[this._targetPath.length - 1]++;
-                    while(checkingChunkPath.length < this._table.data.hierarchy.length + 1) checkingChunkPath.push(0);
-                    var newSratingRowPath = this._targetPath.concat([0]);
-                    var newSratingRow = document.getElementById(this._table.RowIDPrefix + newSratingRowPath);
-                    newSratingRow = this.getStartingRowOfChunk(this._targetPath);
-                    this._chunkToMove = this.getRowChunk(newSratingRow, this._chunkToMove.length);
-                    break;
-                }
+            if(comparePath(this._objPath, checkingPath)!=0 && this.isMoveCondition(checkingPath)) {
+                this.moveRowAndUpdate(checkingPath);
+                break;
             }
         }
     }
+    moveRowAndUpdate(normalizedToPath) {
+        var toPath = normalizedToPath.map((x) => {return (x=='empty')?0:x;});
+        this._table.data.moveSubdata(this._objPath, toPath);
+        this._table.rereadTable();
+        this._objPath = copyArray(toPath);
+        this._objChunk = this.getChunk(this._objPath);
+    }
     updateWhileDrag(event) {
-        this._dragElem.style.transform = 'translate3d(' 
+        this._floatingChunk.style.transform = 'translate3d(' 
             + (event.clientX - this._mouseDownX)/10 + 'px, ' 
             + (event.clientY - this._mouseDownY) + 'px, 0)';
         this.moveRow();
     }
     endDrag(event) {
-        this._chunkToMove = null;
-        this._targetPath = null;
-        this._chunkToMove = null;
-        this._dragElem.remove();
+        this._objChunk = null;
+        this._objPath = null;
+        this._floatingChunk.remove();
         document.onselectstart = null;
         document.removeEventListener('mousemove', this._boundUpdateWhileDrag);
         document.removeEventListener('mouseup', this._boundUpdateAfterDrag);
@@ -595,7 +597,7 @@ class accTable{
 
         var title = '';
         if(this._tableType[1]==this.INCOME) title = '수입';
-        else if(this._tableType[1]==this.EXPENDITURE) title = '지츨';
+        else if(this._tableType[1]==this.EXPENDITURE) title = '지출';
 
         var addedColCount = 0;
         if(this._tableType[1]==this.EXPENDITURE) addedColCount = 2;
@@ -636,6 +638,8 @@ class accTable{
         var budgetCell = row.getElementsByClassName(this._HTMLPrefix+'예산')[0];
         var settlementCell = row.getElementsByClassName(this._HTMLPrefix+'결산')[0];
         var percntCell = row.getElementsByClassName(this._HTMLPrefix+'집행률')[0];
+
+        if(!percntCell) return;// percntCell doesn't exist while creating table
 
         if(budgetCell.hasAttribute('number-data') && settlementCell.hasAttribute('number-data')) {
             if(budgetCell.getAttribute('number-data') == 0) percntCell.textContent = '신설';
@@ -712,6 +716,7 @@ class accTable{
             amountCell.textContent = formatter.format(amountCell.textContent);
             amountCell.style.textAlign = "left"
         }
+        this.calculatePercent(amountCell.parentElement);
     }
     amountCellAfterEdit(event) { //Only in case of keyboard input
         event = event;//IE not supported
@@ -723,7 +728,6 @@ class accTable{
         this.markSelectionPos(cell);
         this.removeExceptNum(cell);
         this.restoreSelection(cell, cell.textContent.length - originalLength, 0);
-        this.calculatePercent(cell.parentElement);
     }
     amountCellAfterPaste(event) {
         event = event;//IE not supported
@@ -734,7 +738,6 @@ class accTable{
         this._boundHandlePaste(event);
         this.removeExceptNum(cell);
         this.restoreSelection(cell, selectionLength + cell.textContent.length - originalLength, 0);
-        this.calculatePercent(cell.parentElement);
     }
     setAmountCellAutoFormatting(amountCell) {
         amountCell.addEventListener('focus', this._boundAmountCellPrepareEdit);
@@ -871,18 +874,18 @@ class accTable{
     createRowsRecursion(classPath) {
         var accTbody = this._tableElement.tBodies[0];
         if(this._data.countSubclass(classPath) != 0) {
-            if(classPath.length == this._data._hierarchy.length){//lowest class
+            if(classPath.length == this._data._hierarchy.length){//lowest level class
                 for(var i = 0; i < this._data.countSubclass(classPath); i++) {
                     var row = accTbody.insertRow();
                     row.id = this._RowIDPrefix + classPath.concat([i]);
                     row.setAttribute('path', JSON.stringify(classPath.concat([i])));
                     row.classList.add(this._HTMLItemClass);
                 }
-            } else {
+            } else {//check subclass
                 for(let i = 0; i < this._data.countSubclass(classPath); i++)
                     this.createRowsRecursion(classPath.concat([i]));
             }
-        } else {
+        } else {//class doesn't have subclass, empty
             var row = accTbody.insertRow();
             row.id = this._RowIDPrefix + classPath;
         }
