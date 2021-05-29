@@ -235,18 +235,22 @@ class dragHandler {
         this._boundStartDrag = this.startDrag.bind(this);
         this._boundUpdateWhileDrag = this.updateWhileDrag.bind(this);
         this._boundUpdateAfterDrag = this.endDrag.bind(this);
+        this._boundRemoveObjChunk = this.removeObjChunk.bind(this);
 
         this._objChunk = null;
         this._objPath = null;
         this._floatingChunk = null;
         this._mouseDownX = 0;
         this._mouseDownY = 0;
+        this._objOffsetX = 0;
+        this._objOffsetY = 0;
 
         //keywords
         this.DRAGHANDLE = 'drag-handle-cell';
         this.INCOME = 'income';
         this.EXPENDITURE = 'expenditure';
         this.INVISABLE = 'invisable-cell';
+        this.SHADOW = 'shadow';
 
         this._hidingRowCount = 0;
 
@@ -276,46 +280,46 @@ class dragHandler {
         }
         return chunk;
     }
-    createDragElem() {
+    createFloatingChunk() {
         this._floatingChunk = document.createElement('Table');
         this._floatingChunk.append(this._table.createColgroup());
 
         for(var i = 0; i <this._objChunk.length; i++) {
             console.log(1111111);
-            var dragElemRow = this._objChunk[i].cloneNode(true);
+            var chunkRow = this._objChunk[i].cloneNode(true);
 
             if(this._table.mode[1]==this.INCOME) {
-                if(dragElemRow.cells[0].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[0]))
-                    dragElemRow.cells[0].remove();
-                if(dragElemRow.cells[0].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[1]))
-                    dragElemRow.cells[0].remove();
-                dragElemRow.insertCell(0).classList.add(this.INVISABLE);
-                dragElemRow.insertCell(0).classList.add(this.INVISABLE);
+                if(chunkRow.cells[0].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[0]))
+                    chunkRow.cells[0].remove();
+                if(chunkRow.cells[0].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[1]))
+                    chunkRow.cells[0].remove();
+                chunkRow.insertCell(0).classList.add(this.INVISABLE);
+                chunkRow.insertCell(0).classList.add(this.INVISABLE);
             }
 
             if(this._table.mode[1]==this.EXPENDITURE) {
-                if(dragElemRow.cells[0].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[0]))
-                    dragElemRow.cells[0].remove();
-                dragElemRow.insertCell(0).classList.add(this.INVISABLE);
+                if(chunkRow.cells[0].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[0]))
+                    chunkRow.cells[0].remove();
+                chunkRow.insertCell(0).classList.add(this.INVISABLE);
                 if(this._objPath.length >= 3){
-                    if(dragElemRow.cells[2].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[1])){
-                        dragElemRow.cells[1].remove();
-                        dragElemRow.cells[1].remove();
+                    if(chunkRow.cells[2].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[1])) {
+                        chunkRow.cells[1].remove();
+                        chunkRow.cells[1].remove();
                     }
-                    dragElemRow.insertCell(0).classList.add(this.INVISABLE);
-                    dragElemRow.insertCell(0).classList.add(this.INVISABLE);
+                    chunkRow.insertCell(0).classList.add(this.INVISABLE);
+                    chunkRow.insertCell(0).classList.add(this.INVISABLE);
                     if(this._objPath.length >= 4){
-                        if(dragElemRow.cells[4].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[2])) {
-                            dragElemRow.cells[3].remove();
-                            dragElemRow.cells[3].remove();
+                        if(chunkRow.cells[4].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[2])) {
+                            chunkRow.cells[3].remove();
+                            chunkRow.cells[3].remove();
                         }
-                        dragElemRow.insertCell(0).classList.add(this.INVISABLE);
-                        dragElemRow.insertCell(0).classList.add(this.INVISABLE);
+                        chunkRow.insertCell(0).classList.add(this.INVISABLE);
+                        chunkRow.insertCell(0).classList.add(this.INVISABLE);
                     }
                 }
             }
 
-            this._floatingChunk.append(dragElemRow);
+            this._floatingChunk.append(chunkRow);
         }
 
         this._floatingChunk.id = 'drag-elem';
@@ -330,25 +334,57 @@ class dragHandler {
         // this._floatingChunk.style.left = '50%';
         // this._floatingChunk.style.marginLeft = (-this._floatingChunk.offsetWidth/2) + 'px';
 
-        document.dispatchEvent(new MouseEvent('mousemove',
-            { view: window, cancelable: true, bubbles: true }
-        ));
+        // document.dispatchEvent(new MouseEvent('mousemove',
+        //     { view: window, cancelable: true, bubbles: true }
+        // ));
 
         return this._floatingChunk;
+    }
+    styleObjCunk() {
+        for(var i=0; i<this._objChunk.length; i++) {
+            var chunkRow = this._objChunk[i];
+            var cellCnt = 0;
+            var leavingCellCnt = 0;//number of cells we won't change
+            var cellIdx = 0;
+            while(cellIdx<chunkRow.cells.length) {
+                var cell = chunkRow.cells[cellIdx];
+                cellCnt++;
+                var isHigherLevelDragHandle =
+                    cell.classList.contains(this.DRAGHANDLE)
+                    && this._objPath.length>JSON.parse(cell.getAttribute('path')).length;
+                var isHigherLevelClassCell =
+                    cell.classList.contains(this._table.HTMLClassClass)
+                    && this._objPath.length>JSON.parse(cell.getAttribute('path')).length;
+                if(isHigherLevelDragHandle || isHigherLevelClassCell) {
+                    leavingCellCnt ++;
+                    cellIdx++;
+                    continue;
+                }
+                cell.remove();
+            }
+            if(i==0) {
+                var shadowCell = chunkRow.insertCell();
+                shadowCell.classList.add(this.SHADOW);
+                shadowCell.setAttribute('rowspan', this._objChunk.length);
+                shadowCell.setAttribute('colspan', cellCnt-leavingCellCnt);
+            }
+        }
     }
     startDrag(event) {
         if(event.button != 0) return true;
 
         document.onselectstart = () => {return false;}//prevent error might be occured by drag selection
         //document.addEventListener('selectstart', returnFalse);
-        // if(this._table.mode[1]==this.EXPENDITURE)
         this._objPath = JSON.parse(event.target.getAttribute('path'));
         this._objChunk = this.getChunk(this._objPath);
 
         if(this._objChunk) {
-            this.createDragElem();
+            this.createFloatingChunk();
+            this.styleObjCunk();
             this._mouseDownX = event.clientX;
             this._mouseDownY = event.clientY;
+            this._objOffsetX = 0;
+            this._objOffsetY = 0;
             document.addEventListener('mousemove', this._boundUpdateWhileDrag);
             document.addEventListener('mouseup', this._boundUpdateAfterDrag);
         }
@@ -407,25 +443,62 @@ class dragHandler {
         }
     }
     moveRowAndUpdate(normalizedToPath) {
+        var beforePosX = this._objChunk[0].getBoundingClientRect().x;
+        var beforePosY = this._objChunk[0].getBoundingClientRect().y;
+
         var toPath = normalizedToPath.map((x) => {return (x=='empty')?0:x;});
         this._table.data.moveSubdata(this._objPath, toPath);
         this._table.rereadTable();
         this._objPath = copyArray(toPath);
         this._objChunk = this.getChunk(this._objPath);
+        this.styleObjCunk();
+
+        var afterPosX = this._objChunk[0].getBoundingClientRect().x;
+        var afterPosY = this._objChunk[0].getBoundingClientRect().y;
+        this._objOffsetX += afterPosX - beforePosX;
+        this._objOffsetY += afterPosY - beforePosY;
+    }
+    clacRemoveGraphic(x) {
+        var l = 400;
+        var t = 500;
+        if(x>650) return 500;
+        else{
+             return 500*Math.sin(x/500);
+        }
     }
     updateWhileDrag(event) {
-        this._floatingChunk.style.transform = 'translate3d(' 
-            + (event.clientX - this._mouseDownX)/10 + 'px, ' 
-            + (event.clientY - this._mouseDownY) + 'px, 0)';
+        var dx = event.clientX - this._mouseDownX;
+        var dy = event.clientY - this._mouseDownY;
+        if(dx>60 && dx>1.5*dy) {
+            this._floatingChunk.style.transform = 'translate3d(' 
+                + this.clacRemoveGraphic(dx) + 'px, ' 
+                + this._objOffsetY + 'px, 0)';
+            this._floatingChunk.style.opacity = Math.max(-0.7/230*dx + 580*0.7/230,0.35);
+            if(dx>650) document.addEventListener('mouseup', this._boundRemoveObjChunk);
+            else document.removeEventListener('mouseup', this._boundRemoveObjChunk);
+        }else{
+            this._floatingChunk.style.opacity = 0.7;
+            this._floatingChunk.style.transform = 'translate3d(' 
+                + 0 + 'px, ' 
+                + dy + 'px, 0)';
+        }
         this.moveRow();
     }
-    endDrag(event) {
+    async removeObjChunk(){
+        console.log(this._objPath)
+        this._table.data.removeClass(this._objPath, true);
+        this._table.rereadTable();
+        this.endDrag();
+        document.removeEventListener('mouseup', this._boundRemoveObjChunk);
+    }
+    endDrag() {
         this._objChunk = null;
-        this._objPath = null;
+        // this._objPath = null;//syncroniztion problem
         this._floatingChunk.remove();
         document.onselectstart = null;
         document.removeEventListener('mousemove', this._boundUpdateWhileDrag);
         document.removeEventListener('mouseup', this._boundUpdateAfterDrag);
+        this._table.rereadTable();
     }
 }
 
@@ -444,6 +517,7 @@ class accTable{
         this._HTMLIDPrefix = 'acc-' + tableID + '-';
         this._RowIDPrefix = this._HTMLIDPrefix + 'row-';
         this._HTMLTableClass = this._HTMLPrefix + 'table';
+        this._HTMLClassClass = this._HTMLPrefix + 'class';
         this._HTMLItemClass = this._HTMLPrefix + 'item';
         this._HTMLItemPrefix = this._HTMLPrefix + 'item-';
         this._HTMLClassPrefix = this._HTMLPrefix + 'class-';
@@ -453,7 +527,7 @@ class accTable{
         //keywords
         this.INCOME = 'income';
         this.EXPENDITURE = 'expenditure';
-        this.DRAGHANDLE = 'drag-handle-cell';
+        this._DRAGHANDLE = 'drag-handle-cell';
         this.EMPTYROW = 'empty-placeholder-row'
         this.EMPTYCELL = 'empty-placeholder-cell'
 
@@ -492,9 +566,11 @@ class accTable{
     get HTMLIDPrefix() {return this._HTMLIDPrefix;}
     get RowIDPrefix() {return this._RowIDPrefix;}
     get HTMLTableClass() {return this._HTMLTableClass;}
+    get HTMLClassClass() {return this._HTMLClassClass;}
     get HTMLItemClass() {return this._HTMLItemClass;}
     get HTMLItemPrefix() {return this._HTMLItemPrefix;}
     get HTMLClassPrefix() {return this._HTMLClassPrefix;}
+    get DRAGHANDLE() {return this._DRAGHANDLE;}
     get tHeadLength() {return this._tableElement.tHead.children.length}
 
     //--Helper functions--
@@ -818,7 +894,10 @@ class accTable{
         cell.id = this._HTMLIDPrefix + classPath;
         cell.textContent = this._data.getClassName(classPath);
         cell.setAttribute('rowspan', Math.max(1, this.countClassRows(classPath)));
-        cell.classList.add(this._HTMLPrefix + this.data.hierarchy[classPath.length-1], this._HTMLPrefix + classPath);
+        cell.setAttribute('path', JSON.stringify(classPath));
+        cell.classList.add(this._HTMLClassClass, 
+                           this._HTMLPrefix + this.data.hierarchy[classPath.length-1], 
+                           this._HTMLPrefix + classPath);
         return cell;
     }
     createItemCells(rowPosition, itemPath) {
@@ -997,7 +1076,7 @@ function addNewItem() {
 
 document.getElementById('button').addEventListener('click', () => {
     // addNewItem();
-    incomeData1.removeClass([0,1]);
+    incomeTable1.data.removeClass([0,1]);
     incomeTable1.rereadTable();
 });
 
