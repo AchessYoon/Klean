@@ -231,8 +231,7 @@ class dragHandler {
     constructor(table){
         this._table = table;
 
-        //bound 'this' of event handers 
-        this._boundStartDrag = this.startDrag.bind(this);
+        //bound 'this' of event handers for add/remove event handler
         this._boundUpdateWhileDrag = this.updateWhileDrag.bind(this);
         this._boundUpdateAfterDrag = this.endDrag.bind(this);
         this._boundRemoveObjChunk = this.removeObjChunk.bind(this);
@@ -240,30 +239,28 @@ class dragHandler {
         this._objChunk = null;
         this._objPath = null;
         this._floatingChunk = null;
+
         this._mouseDownX = 0;
         this._mouseDownY = 0;
         this._objOffsetX = 0;
         this._objOffsetY = 0;
 
+        this._hidingRowCount = 0;
+
         //keywords
-        this.DRAGHANDLE = 'drag-handle-cell';
-        this.INCOME = 'income';
-        this.EXPENDITURE = 'expenditure';
         this.INVISABLE = 'invisable-cell';
         this.SHADOW = 'shadow';
 
-        this._hidingRowCount = 0;
-
-        var dragHandles = this._table.DOMElement.getElementsByClassName(this.DRAGHANDLE);
+        var dragHandles = this._table.DOMElement.getElementsByClassName(this._table.DRAGHANDLE);
         for(let i = 0; i < dragHandles.length; i++) 
-            dragHandles[i].addEventListener('mousedown', this._boundStartDrag);
+            dragHandles[i].addEventListener('mousedown', this.startDrag.bind(this));
     }
     getFirstRowOfChunk(chunkPath) {
         console.log(chunkPath);
         var firstRowPath = copyArray(chunkPath);
         var firstRow = null;
         for(; firstRowPath.length <= this._table.data.hierarchy.length + 1; firstRowPath.push(0)) {
-            firstRow = document.getElementById(this._table.RowIDPrefix + firstRowPath);
+            firstRow = document.getElementById(this._table.HTMLRowPrefix + firstRowPath);
             if(firstRow) return firstRow;
         }
     }
@@ -288,7 +285,7 @@ class dragHandler {
             console.log(1111111);
             var chunkRow = this._objChunk[i].cloneNode(true);
 
-            if(this._table.mode[1]==this.INCOME) {
+            if(this._table.mode[1]==this._table.INCOME) {
                 if(chunkRow.cells[0].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[0]))
                     chunkRow.cells[0].remove();
                 if(chunkRow.cells[0].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[1]))
@@ -297,7 +294,7 @@ class dragHandler {
                 chunkRow.insertCell(0).classList.add(this.INVISABLE);
             }
 
-            if(this._table.mode[1]==this.EXPENDITURE) {
+            if(this._table.mode[1]==this._table.EXPENDITURE) {
                 if(chunkRow.cells[0].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[0]))
                     chunkRow.cells[0].remove();
                 chunkRow.insertCell(0).classList.add(this.INVISABLE);
@@ -348,9 +345,10 @@ class dragHandler {
             var cellIdx = 0;
             while(cellIdx<chunkRow.cells.length) {
                 var cell = chunkRow.cells[cellIdx];
-                cellCnt++;
+                if(cell.hasAttribute('rowspan')) cellCnt += cell.getAttribute('rowspan');
+                else cellCnt++;
                 var isHigherLevelDragHandle =
-                    cell.classList.contains(this.DRAGHANDLE)
+                    cell.classList.contains(this._table.DRAGHANDLE)
                     && this._objPath.length>JSON.parse(cell.getAttribute('path')).length;
                 var isHigherLevelClassCell =
                     cell.classList.contains(this._table.HTMLClassClass)
@@ -404,7 +402,7 @@ class dragHandler {
             chunkPath.pop();//get position of higher level class
 
         if(pathLength == this._table.data.hierarchy.length + 1) {//item chunk
-            return document.getElementById(this._table.RowIDPrefix + chunkPath).getBoundingClientRect();
+            return document.getElementById(this._table.HTMLRowPrefix + chunkPath).getBoundingClientRect();
         }else{//class chunk
             var classCell = this._table.DOMElement.getElementsByClassName(this._table.HTMLPrefix + chunkPath)[0];
             return classCell.getBoundingClientRect();
@@ -504,32 +502,11 @@ class dragHandler {
 
 class accTable{
     constructor(tableID, parentElement, tableType, givenData){
+        this._tabelID = tableID;
         this._tableType = tableType;
 
-        //bound 'this' of event handers 
-        this._boundHandlePaste = this.handlePaste.bind(this);
-        this._boundPreventEnter = this.preventEnter.bind(this);
-        this._boundAmountCellPrepareEdit = this.amountCellPrepareEdit.bind(this);
-        this._boundAmountCellAfterEdit = this.amountCellAfterEdit.bind(this);
-        this._boundamountCellAfterPaste = this.amountCellAfterPaste.bind(this);
-
-        this._HTMLPrefix = 'acc-';
-        this._HTMLIDPrefix = 'acc-' + tableID + '-';
-        this._RowIDPrefix = this._HTMLIDPrefix + 'row-';
-        this._HTMLTableClass = this._HTMLPrefix + 'table';
-        this._HTMLClassClass = this._HTMLPrefix + 'class';
-        this._HTMLItemClass = this._HTMLPrefix + 'item';
-        this._HTMLItemPrefix = this._HTMLPrefix + 'item-';
-        this._HTMLClassPrefix = this._HTMLPrefix + 'class-';
-        this._HTMLColPrefix = this._HTMLPrefix + 'col-';
-        this._HTMLHeadPrefix = this._HTMLPrefix + 'h-';
-
-        //keywords
-        this.INCOME = 'income';
-        this.EXPENDITURE = 'expenditure';
-        this._DRAGHANDLE = 'drag-handle-cell';
-        this.EMPTYROW = 'empty-placeholder-row'
-        this.EMPTYCELL = 'empty-placeholder-cell'
+        this.HTMLColPrefix = this.HTMLPrefix + 'col-';
+        this.HTMLHeadPrefix = this.HTMLPrefix + 'h-';
 
         this._dataHierarchy = null;
         this._dataItemFields = null;
@@ -547,8 +524,8 @@ class accTable{
             () => true); //[true, true, true, ..., true]
 
         this._tableElement = document.createElement('table');
-        this._tableElement.id = this._HTMLIDPrefix + 'table';
-        this._tableElement.classList.add(this._HTMLPrefix + 'table');
+        this._tableElement.id = this.HTMLIDPrefix + 'table';
+        this._tableElement.classList.add(this.HTMLPrefix + 'table');
 
         this._tableColgroup = this.createColgroup();
         this._tableElement.append(this._tableColgroup);
@@ -561,22 +538,33 @@ class accTable{
     get DOMElement() {return this._tableElement;}
     get data() {return this._data;}
     get mode() {return this._tableType;}
-    get tableColgroup() {return this._tableColgroup;}
-    get HTMLPrefix() {return this._HTMLPrefix;}
-    get HTMLIDPrefix() {return this._HTMLIDPrefix;}
-    get RowIDPrefix() {return this._RowIDPrefix;}
-    get HTMLTableClass() {return this._HTMLTableClass;}
-    get HTMLClassClass() {return this._HTMLClassClass;}
-    get HTMLItemClass() {return this._HTMLItemClass;}
-    get HTMLItemPrefix() {return this._HTMLItemPrefix;}
-    get HTMLClassPrefix() {return this._HTMLClassPrefix;}
-    get DRAGHANDLE() {return this._DRAGHANDLE;}
-    get tHeadLength() {return this._tableElement.tHead.children.length}
+
+    //HTML keywords
+    get HTMLPrefix() {return 'acc-';}
+    get HTMLIDPrefix() {return this.HTMLPrefix + this._tabelID + '-'}
+    get HTMLTableClass() {return this.HTMLPrefix + 'table';}
+    get HTMLRowPrefix() {return this.HTMLIDPrefix + 'row-';}
+    get HTMLClassClass() {return this.HTMLPrefix + 'class';}
+    get HTMLClassPrefix() {return this.HTMLPrefix + 'class-';}
+    get HTMLItemClass() {return this.HTMLPrefix + 'item';}
+    get HTMLItemPrefix() {return this.HTMLPrefix + 'item-';}
+
+        // this.HTMLColPrefix = this.HTMLPrefix + 'col-';
+        // this.HTMLHeadPrefix = this.HTMLPrefix + 'h-';
+
+    //keywords
+    get INCOME() {return 'income';}
+    get EXPENDITURE() {return 'expenditure';}
+    get DRAGHANDLE() {return 'drag-handle-cell';}
+    get EMPTYROW() {return 'empty-placeholder-row';}
+    get EMPTYCELL() {return 'empty-placeholder-cell';}
 
     //--Helper functions--
     // getClassCells(classLevel) {
-    //     return Array.from(this._tableElement.getElementsByClassName(this._HTMLPrefix + this.data.hierarchy[classLevel]));
+    //     return Array.from(this._tableElement.getElementsByClassName(this.HTMLPrefix + this.data.hierarchy[classLevel]));
     // }
+    get tableColgroup() {return this._tableColgroup;}
+    get tHeadLength() {return this._tableElement.tHead.children.length;}
     cellNum(cellFieldName) {//코드 관리를 위해 cellNum은 변수가 아닌 string을 바로 인자로 호출
         return this._itemCellComposition.indexOf(cellFieldName);
     }
@@ -651,16 +639,16 @@ class accTable{
         for(var i = 0; i < this.data.hierarchy.length; i++) {
             if(this._tableType[1]==this.EXPENDITURE && i > 0) {
                 var col = document.createElement('col');
-                col.classList.add(this._HTMLColPrefix + this.DRAGHANDLE);
+                col.classList.add(this.HTMLColPrefix + this.DRAGHANDLE);
                 colgroup.append(col);
             }
             var col = document.createElement('col');
-            col.classList.add(this._HTMLColPrefix + this.data.hierarchy[i]);
+            col.classList.add(this.HTMLColPrefix + this.data.hierarchy[i]);
             colgroup.append(col);
         }
         for(var i = 0; i < this._itemCellComposition.length; i++) {
             var col = document.createElement('col');
-            col.classList.add(this._HTMLColPrefix + this._itemCellComposition[i]);
+            col.classList.add(this.HTMLColPrefix + this._itemCellComposition[i]);
             colgroup.append(col);
         }
         return colgroup;
@@ -686,7 +674,7 @@ class accTable{
         for(var i = 0; i < this.data.hierarchy.length; i++) {//class rows
             var td = document.createElement('td');
             td.textContent = this.data.hierarchy[i];
-            td.classList.add(this._HTMLHeadPrefix + this.data.hierarchy[i]);
+            td.classList.add(this.HTMLHeadPrefix + this.data.hierarchy[i]);
             secondRow.append(td);
             if(this._tableType[1]==this.EXPENDITURE && i > 0)
                 td.setAttribute('colspan', '2');
@@ -696,7 +684,7 @@ class accTable{
             if(this._itemCellComposition[i] != this.DRAGHANDLE) {
                 td = document.createElement('td');
                 td.textContent = this._itemCellComposition[i]
-                td.classList.add(this._HTMLHeadPrefix + this._itemCellComposition[i]);
+                td.classList.add(this.HTMLHeadPrefix + this._itemCellComposition[i]);
                 secondRow.append(td);
             }
             if(i >= 1 && this._itemCellComposition[i-1] == this.DRAGHANDLE)
@@ -710,10 +698,10 @@ class accTable{
 
     //--Item Percent--
     calculatePercent(row) {
-        if(row.getElementsByClassName(this._HTMLPrefix+this._data.itemFields[4]).length==0) return;//item not load
-        var budgetCell = row.getElementsByClassName(this._HTMLPrefix+'예산')[0];
-        var settlementCell = row.getElementsByClassName(this._HTMLPrefix+'결산')[0];
-        var percntCell = row.getElementsByClassName(this._HTMLPrefix+'집행률')[0];
+        if(row.getElementsByClassName(this.HTMLPrefix+this._data.itemFields[4]).length==0) return;//item not load
+        var budgetCell = row.getElementsByClassName(this.HTMLPrefix+'예산')[0];
+        var settlementCell = row.getElementsByClassName(this.HTMLPrefix+'결산')[0];
+        var percntCell = row.getElementsByClassName(this.HTMLPrefix+'집행률')[0];
 
         if(!percntCell) return;// percntCell doesn't exist while creating table
 
@@ -811,16 +799,16 @@ class accTable{
         var originalLength = cell.textContent.length;
         var selectionLength = this.getSelectionLength();
         this.markSelectionPos(cell);
-        this._boundHandlePaste(event);
+        this.handlePaste(event);
         this.removeExceptNum(cell);
         this.restoreSelection(cell, selectionLength + cell.textContent.length - originalLength, 0);
     }
     setAmountCellAutoFormatting(amountCell) {
-        amountCell.addEventListener('focus', this._boundAmountCellPrepareEdit);
+        amountCell.addEventListener('focus', this.amountCellPrepareEdit.bind(this));
         amountCell.addEventListener('blur', () => {this.amountCellFormat(amountCell);});//includes updating datum
         amountCell.addEventListener('keypress', (e) => {if((e.keyCode < 48) || (e.keyCode > 57)) e.returnValue = false;}); // keydown, keyup, compositionupdate
-        amountCell.addEventListener('keyup', this._boundAmountCellAfterEdit);
-        amountCell.addEventListener('paste', this._boundamountCellAfterPaste);
+        amountCell.addEventListener('keyup', this.amountCellAfterEdit.bind(this));
+        amountCell.addEventListener('paste', this.amountCellAfterPaste.bind(this));
     }
 
     //--Generateing Table--
@@ -833,22 +821,22 @@ class accTable{
         cell.setAttribute('feild-idx', itemFieldIdx);
         switch(itemCellType){
         case '항목'://항목
-            cell.classList.add(this._HTMLPrefix + itemCellType);
+            cell.classList.add(this.HTMLPrefix + itemCellType);
             cell.setAttribute('contenteditable', true);
             cell.addEventListener('focus', this.selectOnFocus);
             cell.addEventListener('blur', (e) => {
                 this.snycCellToData(e.target);
                 e.target.scroll(0,0);
             });
-            cell.addEventListener('keypress', this._boundPreventEnter);//prevent Enter
-            cell.addEventListener('paste', this._boundHandlePaste);
+            cell.addEventListener('keypress', this.preventEnter.bind(this));//prevent Enter
+            cell.addEventListener('paste', this.handlePaste.bind(this));
             cell.addEventListener('drop', this.preventEventDefault);//drag-drop paste
             break;
         case '코드'://코드
-            cell.classList.add(this._HTMLPrefix + itemCellType);
+            cell.classList.add(this.HTMLPrefix + itemCellType);
             break;
         case '예산'://예산
-            cell.classList.add(this._HTMLPrefix + itemCellType);
+            cell.classList.add(this.HTMLPrefix + itemCellType);
             cell.setAttribute('contenteditable', true);
             this.amountCellFormat(cell);//initial formatting
             this.setAmountCellAutoFormatting(cell);//includes updating datum
@@ -857,7 +845,7 @@ class accTable{
             cell.addEventListener('drop', this.preventEventDefault);//drag-drop paste
             break;
         case '결산'://결산
-            cell.classList.add(this._HTMLPrefix + itemCellType);
+            cell.classList.add(this.HTMLPrefix + itemCellType);
             cell.setAttribute('contenteditable', true);
             this.amountCellFormat(cell);//initial formatting
             this.setAmountCellAutoFormatting(cell);//includes updating datum
@@ -866,15 +854,15 @@ class accTable{
             cell.addEventListener('drop', this.preventEventDefault);//drag-drop paste
             break;
         case '집행률'://집행률
-            cell.classList.add(this._HTMLPrefix + itemCellType);
+            cell.classList.add(this.HTMLPrefix + itemCellType);
             this.calculatePercent(cell.parentElement);//initial formatting
             break;
         case '비고'://비고
-            cell.classList.add(this._HTMLPrefix + itemCellType);
+            cell.classList.add(this.HTMLPrefix + itemCellType);
             cell.setAttribute('contenteditable', true);
             cell.addEventListener('blur', (e) => {this.snycCellToData(e.target)});
             cell.addEventListener('blur', (e) => {e.target.scroll(0,0);});
-            cell.addEventListener('paste', (e) => {this._boundHandlePaste(e, true);});
+            cell.addEventListener('paste', (e) => {this.handlePaste(e, true);});//this undound
             cell.addEventListener('drop', this.preventEventDefault);//drag-drop paste
             break;
         }
@@ -891,13 +879,13 @@ class accTable{
         return cell;
     }
     setClassCell(cell, classPath){
-        cell.id = this._HTMLIDPrefix + classPath;
+        cell.id = this.HTMLIDPrefix + classPath;
         cell.textContent = this._data.getClassName(classPath);
         cell.setAttribute('rowspan', Math.max(1, this.countClassRows(classPath)));
         cell.setAttribute('path', JSON.stringify(classPath));
-        cell.classList.add(this._HTMLClassClass, 
-                           this._HTMLPrefix + this.data.hierarchy[classPath.length-1], 
-                           this._HTMLPrefix + classPath);
+        cell.classList.add(this.HTMLClassClass, 
+                           this.HTMLPrefix + this.data.hierarchy[classPath.length-1], 
+                           this.HTMLPrefix + classPath);
         return cell;
     }
     createItemCells(rowPosition, itemPath) {
@@ -956,9 +944,9 @@ class accTable{
             if(classPath.length == this._data._hierarchy.length){//lowest level class
                 for(var i = 0; i < this._data.countSubclass(classPath); i++) {
                     var row = accTbody.insertRow();
-                    row.id = this._RowIDPrefix + classPath.concat([i]);
+                    row.id = this.HTMLRowPrefix + classPath.concat([i]);
                     row.setAttribute('path', JSON.stringify(classPath.concat([i])));
-                    row.classList.add(this._HTMLItemClass);
+                    row.classList.add(this.HTMLItemClass);
                 }
             } else {//check subclass
                 for(let i = 0; i < this._data.countSubclass(classPath); i++)
@@ -966,7 +954,7 @@ class accTable{
             }
         } else {//class doesn't have subclass, empty
             var row = accTbody.insertRow();
-            row.id = this._RowIDPrefix + classPath;
+            row.id = this.HTMLRowPrefix + classPath;
         }
     }
     readDataAndSet() {
@@ -991,9 +979,9 @@ class accTable{
         return count;
     }
     showHideCol(colType, isShow) {
-        var cellsToHide = this._tableElement.getElementsByClassName(this._HTMLPrefix + colType);
-        var headCellToHide = this._tableElement.getElementsByClassName(this._HTMLHeadPrefix + colType);
-        var colToHide = this._tableElement.getElementsByClassName(this._HTMLColPrefix + colType);
+        var cellsToHide = this._tableElement.getElementsByClassName(this.HTMLPrefix + colType);
+        var headCellToHide = this._tableElement.getElementsByClassName(this.HTMLHeadPrefix + colType);
+        var colToHide = this._tableElement.getElementsByClassName(this.HTMLColPrefix + colType);
         var columnIdx = this.data.hierarchy.length + this._itemCellComposition.indexOf(colType);
         var settingValue = '';
         if(!isShow) settingValue = 'none';
