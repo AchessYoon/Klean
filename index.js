@@ -291,6 +291,7 @@ class dragHandler {
                 chunk.push(rowToPush);
             }
         }
+        console.log(chunk);
         return chunk;
     }
     createFloatingChunk() {
@@ -585,6 +586,8 @@ class accTable{
     get HTMLIDPrefix() {return this.HTMLPrefix + this._tabelID + '-'}
     get HTMLTableClass() {return this.HTMLPrefix + 'table';}
     get HTMLRowPrefix() {return this.HTMLIDPrefix + 'row-';}
+    get HTMLSumRowClass() {return this.HTMLRowPrefix + 'sum';}
+    get HTMLSumRowPrefix() {return this.HTMLRowPrefix + 'sum-';}
     get HTMLClassClass() {return this.HTMLPrefix + 'class';}
     get HTMLClassPrefix() {return this.HTMLIDPrefix + 'class-';}
     get HTMLItemClass() {return this.HTMLPrefix + 'item';}
@@ -624,15 +627,15 @@ class accTable{
     }
     countClassRows(classPath) { //count including empty class row
         if(classPath.length == this._data._hierarchy.length){//lowest class
-            return Math.max(1, this._data.countSubclass(classPath));
-        } else {//sum item-count in subclasses
-            var itemCount = 0;
-            if(this._data.countSubclass(classPath) == 0) itemCount = 1;
+            return Math.max(2, this._data.countSubclass(classPath)+1);
+        } else {//sum row count in subclasses
+            var rowCount = 0;
+            if(this._data.countSubclass(classPath) == 0) rowCount = 1;
             for(let i = 0; i < this._data.countSubclass(classPath); i++){
                 var subClassPath = classPath.concat([i]);
-                itemCount += this.countClassRows(subClassPath);
+                rowCount += this.countClassRows(subClassPath);
             }
-            return itemCount;
+            return rowCount+1;
         }
     }
     selectOnFocus(focusEvent) { //focusedCell must be an element
@@ -924,7 +927,7 @@ class accTable{
     setClassCell(cell, classPath){
         cell.id = this.HTMLIDPrefix + classPath;
         cell.textContent = this._data.getClassName(classPath);
-        cell.setAttribute('rowspan', Math.max(1, this.countClassRows(classPath)));
+        cell.setAttribute('rowspan', Math.max(2, this.countClassRows(classPath)));
         cell.setAttribute('path', JSON.stringify(classPath));
         cell.classList.add(this.HTMLClassClass, 
                            this.HTMLPrefix + this.data.hierarchy[classPath.length-1], 
@@ -952,14 +955,27 @@ class accTable{
         row.classList.add(this.EMPTYROW);
         row.setAttribute('path', JSON.stringify(classPath));
     }
+    createSumCell(rowPosition, classPath) {
+        var row = this._tableElement.rows[rowPosition];
+        var sumTitleCell = row.insertCell();
+        var addedColCountInRest = 1;
+        if(this._tableType[1]==this.EXPENDITURE) addedColCountInRest = 4-classPath.length;
+        sumTitleCell.textContent = "계";
+        sumTitleCell.setAttribute('colspan', this.data.hierarchy.length-1 + this._itemCellComposition.length + addedColCountInRest - classPath.length-4);
+
+        var cell0 = row.insertCell();
+        var cell1 = row.insertCell();
+        var cell2 = row.insertCell();
+        var cell3 = row.insertCell();
+    }
     createClassCell(rowPosition, classPath) {
         if(classPath.length > this._data.hierarchy.length) return false;//class
 
         var row = this._tableElement.rows[rowPosition];
         if(classPath.length > 1 && this._tableType[1]==this.EXPENDITURE) {
-            var dragCell = this.setFunctionCell(row.insertCell(), this.DRAGHANDLE, classPath).setAttribute('rowspan', Math.max(1, this.countClassRows(classPath)));
+            var dragCell = this.setFunctionCell(row.insertCell(), this.DRAGHANDLE, classPath).setAttribute('rowspan', Math.max(2, (this.countClassRows(classPath))));
         }
-        var cell = this.setClassCell(row.insertCell(), classPath)
+        var cell = this.setClassCell(row.insertCell(), classPath);
         if(classPath.length > 1 && this._tableType[1]==this.EXPENDITURE) cell.classList.add('no-left-border');
 
         var childPosition = rowPosition;
@@ -973,32 +989,57 @@ class accTable{
                 var childDataPath = classPath.concat([i]);
                 if(areChildrenClass) {//children are also class
                     this.createClassCell(childPosition, childDataPath);
-                    childPosition += this.countClassRows(childDataPath);
+                    childPosition += (this.countClassRows(childDataPath));
                 }else{//children are item
                     this.createItemCells(childPosition, childDataPath);
                     childPosition++;
                 }
             }
         }
+        this.createSumCell(rowPosition+this.countClassRows(classPath)-1, classPath);
     }
     createRowsRecursion(classPath) {
+        // var accTbody = this._tableElement.tBodies[0];
+        // if(this._data.countSubclass(classPath) != 0) {
+        //     if(classPath.length == this._data._hierarchy.length){//lowest level class
+        //         for(var i = 0; i < this._data.countSubclass(classPath); i++) {
+        //             var row = accTbody.insertRow();
+        //             row.id = this.HTMLRowPrefix + classPath.concat([i]);
+        //             row.setAttribute('path', JSON.stringify(classPath.concat([i])));
+        //             row.classList.add(this.HTMLItemClass);
+        //         }
+        //     } else {//recurse subclass
+        //         for(let i = 0; i < this._data.countSubclass(classPath); i++)
+        //             this.createRowsRecursion(classPath.concat([i]));
+        //         var sumRow = accTbody.insertRow();
+        //         sumRow.id = this.HTMLSumRowPrefix + classPath;
+        //         sumRow.classList.add(this.HTMLSumRowClass);
+        //     }
+        // } else {//class doesn't have subclass, empty
+        //     var row = accTbody.insertRow();
+        //     row.id = this.HTMLRowPrefix + classPath;
+        // }
+
         var accTbody = this._tableElement.tBodies[0];
-        if(this._data.countSubclass(classPath) != 0) {
-            if(classPath.length == this._data._hierarchy.length){//lowest level class
-                for(var i = 0; i < this._data.countSubclass(classPath); i++) {
-                    var row = accTbody.insertRow();
-                    row.id = this.HTMLRowPrefix + classPath.concat([i]);
-                    row.setAttribute('path', JSON.stringify(classPath.concat([i])));
-                    row.classList.add(this.HTMLItemClass);
-                }
-            } else {//check subclass
-                for(let i = 0; i < this._data.countSubclass(classPath); i++)
-                    this.createRowsRecursion(classPath.concat([i]));
+        if(this._data.countSubclass(classPath) == 0){//class doesn't have subclass, empty
+                var row = accTbody.insertRow();
+                row.id = this.HTMLRowPrefix + classPath;
+        }else if(classPath.length < this._data._hierarchy.length){//not lowest level class//recurse subclass
+            for(let i = 0; i < this._data.countSubclass(classPath); i++)
+                this.createRowsRecursion(classPath.concat([i]));
+        }else{//lowest level class
+            for(var i = 0; i < this._data.countSubclass(classPath); i++) {
+                var itemPath = classPath.concat([i]);
+                var row = accTbody.insertRow();
+                row.id = this.HTMLRowPrefix + itemPath;
+                row.setAttribute('path', JSON.stringify(itemPath));
+                row.classList.add(this.HTMLItemClass);
             }
-        } else {//class doesn't have subclass, empty
-            var row = accTbody.insertRow();
-            row.id = this.HTMLRowPrefix + classPath;
         }
+        var sumRow = accTbody.insertRow();
+        sumRow.id = this.HTMLSumRowPrefix + classPath;
+        sumRow.classList.add(this.HTMLSumRowClass);
+        sumRow.setAttribute('path', JSON.stringify(classPath));
     }
     readDataAndSet() {
         var accTbody = document.createElement('tbody');
