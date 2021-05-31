@@ -1001,28 +1001,14 @@ class accTable{
         }
         this.createSumCell(rowPosition+this.countClassRows(classPath)-1, classPath);
     }
+    createSumRow(classPath){
+        var accTbody = this._tableElement.tBodies[0];
+        var sumRow = accTbody.insertRow();
+        sumRow.id = this.HTMLSumRowPrefix + classPath;
+        sumRow.classList.add(this.HTMLSumRowClass);
+        sumRow.setAttribute('path', JSON.stringify(classPath));
+    }
     createRowsRecursion(classPath) {
-        // var accTbody = this._tableElement.tBodies[0];
-        // if(this._data.countSubclass(classPath) != 0) {
-        //     if(classPath.length == this._data._hierarchy.length){//lowest level class
-        //         for(var i = 0; i < this._data.countSubclass(classPath); i++) {
-        //             var row = accTbody.insertRow();
-        //             row.id = this.HTMLRowPrefix + classPath.concat([i]);
-        //             row.setAttribute('path', JSON.stringify(classPath.concat([i])));
-        //             row.classList.add(this.HTMLItemClass);
-        //         }
-        //     } else {//recurse subclass
-        //         for(let i = 0; i < this._data.countSubclass(classPath); i++)
-        //             this.createRowsRecursion(classPath.concat([i]));
-        //         var sumRow = accTbody.insertRow();
-        //         sumRow.id = this.HTMLSumRowPrefix + classPath;
-        //         sumRow.classList.add(this.HTMLSumRowClass);
-        //     }
-        // } else {//class doesn't have subclass, empty
-        //     var row = accTbody.insertRow();
-        //     row.id = this.HTMLRowPrefix + classPath;
-        // }
-
         var accTbody = this._tableElement.tBodies[0];
         if(this._data.countSubclass(classPath) == 0){//class doesn't have subclass, empty
                 var row = accTbody.insertRow();
@@ -1039,10 +1025,7 @@ class accTable{
                 row.classList.add(this.HTMLItemClass);
             }
         }
-        var sumRow = accTbody.insertRow();
-        sumRow.id = this.HTMLSumRowPrefix + classPath;
-        sumRow.classList.add(this.HTMLSumRowClass);
-        sumRow.setAttribute('path', JSON.stringify(classPath));
+        this.createSumRow(classPath);
     }
     readDataAndSet() {
         var accTbody = document.createElement('tbody');
