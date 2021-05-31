@@ -759,8 +759,10 @@ class accTable{
         var selection = window.getSelection();
         var rangeStart0 = node.getAttribute('original-range-start-offset')*1;
         var rangeEnd0 = node.getAttribute('original-range-end-offset')*1;
-        range.setStart(node.childNodes[0], rangeStart0 + rangeStartDiff);
-        range.setEnd(node.childNodes[0], node.textContent.length - rangeEnd0 + rangeEndDiff);
+        var newRangeStart = Math.max(0, rangeStart0 + rangeStartDiff)
+        var newRangeEnd = Math.max(newRangeStart, Math.min(node.textContent.length, node.textContent.length - rangeEnd0 + rangeEndDiff));
+        range.setStart(node.childNodes[0], newRangeStart);
+        range.setEnd(node.childNodes[0], newRangeEnd);
         selection.removeAllRanges();
         selection.addRange(range);
         node.removeAttribute('original-range-start-offset');
