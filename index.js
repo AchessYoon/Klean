@@ -273,7 +273,6 @@ class dragHandler {
     }
 
     getFirstRowOfChunk(chunkPath) {
-        console.log(chunkPath);
         var firstRowPath = copyArray(chunkPath);
         var firstRow = null;
         for(; firstRowPath.length <= this._table.data.hierarchy.length + 1; firstRowPath.push(0)) {
@@ -299,7 +298,6 @@ class dragHandler {
         this._floatingChunk.append(this._table.createColgroup());
 
         for(var i = 0; i <this._objChunk.length; i++) {
-            console.log(1111111);
             var chunkRow = this._objChunk[i].cloneNode(true);
 
             if(this._table.mode[1]==this._table.INCOME) {
@@ -392,7 +390,6 @@ class dragHandler {
         this._clickedMoment = Date.now();
 
         if(this._clickedMoment - prevClickMoment < 300){
-            console.log(22222222);
             this.insertNew();
         }else{
             document.onselectstart = () => {return false;}//prevent error might be occured by drag selection
@@ -491,7 +488,6 @@ class dragHandler {
 
     //remove function
     removeObjChunk(){
-        console.log(this._objPath)
         this._table.data.removeClass(this._objPath, true);
         this._table.rereadTable();
         this.endDrag();
