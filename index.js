@@ -556,9 +556,9 @@ class accTable{
     get HTMLTableClass() {return this.HTMLPrefix + 'table';}
     get HTMLRowPrefix() {return this.HTMLIDPrefix + 'row-';}
     get HTMLClassClass() {return this.HTMLPrefix + 'class';}
-    get HTMLClassPrefix() {return this.HTMLPrefix + 'class-';}
+    get HTMLClassPrefix() {return this.HTMLIDPrefix + 'class-';}
     get HTMLItemClass() {return this.HTMLPrefix + 'item';}
-    get HTMLItemPrefix() {return this.HTMLPrefix + 'item-';}
+    get HTMLItemPrefix() {return this.HTMLIDPrefix + 'item-';}
 
         // this.HTMLColPrefix = this.HTMLPrefix + 'col-';
         // this.HTMLHeadPrefix = this.HTMLPrefix + 'h-';
