@@ -68,6 +68,10 @@ class accData {
             this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]][1].splice(itemPath[3], 0, item);
         else console.log('error');
     }
+    insertNewItem(itemPath) {
+        var newItem = Array.from(this._itemFields.length, () => null);
+        this.insertItem(itemPath, newItem);
+    }
     removeItem(itemPath, isLeaveClass = false) {
         if(itemPath.length == 3){
             if(!isLeaveClass && this.countItemsInClass(itemPath.slice(0, 2)) == 1) 
@@ -92,6 +96,10 @@ class accData {
         }else if(classPath.length == 4){
         this.content[classPath[0]][1][classPath[1]][1][classPath[2]][1].splice(classPath[3], 0, insertingData);
         }
+    }
+    insertNewClass(classPath) {
+        var newClass = ['', []]
+        this.insertClass(classPath, newClass);
     }
     removeClass(classPath, isLeaveParent = false) {
         if(classPath.length == 2){
@@ -236,6 +244,8 @@ class dragHandler {
         this._boundUpdateAfterDrag = this.endDrag.bind(this);
         this._boundRemoveObjChunk = this.removeObjChunk.bind(this);
 
+        this._clickedMoment = 0;
+        this._isDbClick = false;
         this._objChunk = null;
         this._objPath = null;
         this._floatingChunk = null;
@@ -253,10 +263,15 @@ class dragHandler {
         this.INVISABLE = 'invisable-cell';
         this.SHADOW = 'shadow';
 
-        var dragHandles = this._table.DOMElement.getElementsByClassName(this._table.DRAGHANDLE);
-        for(let i = 0; i < dragHandles.length; i++) 
-            dragHandles[i].addEventListener('mousedown', this.startDrag.bind(this));
     }
+    setEvent() {
+        var dragHandles = this._table.DOMElement.getElementsByClassName(this._table.DRAGHANDLE);
+        for(let i = 0; i < dragHandles.length; i++) {
+            dragHandles[i].addEventListener('dbclick', this.insertNew.bind(this));
+            dragHandles[i].addEventListener('mousedown', this.startDrag.bind(this));
+        }
+    }
+
     getFirstRowOfChunk(chunkPath) {
         console.log(chunkPath);
         var firstRowPath = copyArray(chunkPath);
@@ -373,20 +388,28 @@ class dragHandler {
     startDrag(event) {
         if(event.button != 0) return true;
 
-        document.onselectstart = () => {return false;}//prevent error might be occured by drag selection
-        //document.addEventListener('selectstart', returnFalse);
-        this._objPath = JSON.parse(event.target.getAttribute('path'));
-        this._objChunk = this.getChunk(this._objPath);
+        var prevClickMoment = this._clickedMoment;
+        this._clickedMoment = Date.now();
 
-        if(this._objChunk) {
-            this.createFloatingChunk();
-            this.styleObjCunk();
-            this._mouseDownX = event.clientX;
-            this._mouseDownY = event.clientY;
-            this._objOffsetX = 0;
-            this._objOffsetY = 0;
-            document.addEventListener('mousemove', this._boundUpdateWhileDrag);
-            document.addEventListener('mouseup', this._boundUpdateAfterDrag);
+        if(this._clickedMoment - prevClickMoment < 300){
+            console.log(22222222);
+            this.insertNew();
+        }else{
+            document.onselectstart = () => {return false;}//prevent error might be occured by drag selection
+            //document.addEventListener('selectstart', returnFalse);
+            this._objPath = JSON.parse(event.target.getAttribute('path'));
+            this._objChunk = this.getChunk(this._objPath);
+
+            if(this._objChunk) {
+                this.createFloatingChunk();
+                this.styleObjCunk();
+                this._mouseDownX = event.clientX;
+                this._mouseDownY = event.clientY;
+                this._objOffsetX = 0;
+                this._objOffsetY = 0;
+                document.addEventListener('mousemove', this._boundUpdateWhileDrag);
+                document.addEventListener('mouseup', this._boundUpdateAfterDrag);
+            }
         }
     }
 
@@ -509,6 +532,16 @@ class dragHandler {
         document.removeEventListener('mouseup', this._boundUpdateAfterDrag);
         this._table.rereadTable();
     }
+
+    //insert function
+    insertNew() {
+        var objPath = JSON.parse(event.target.getAttribute('path'));
+        objPath[objPath.length-1] ++;
+        if(objPath.length == this._table.data.hierarchy.length+1) this._table.data.insertNewItem(objPath);
+        else this._table.data.insertNewClass(objPath);
+        this._table.rereadTable();
+        this._clickedMoment = 0;
+    }
 }
 
 class accTable{
@@ -544,6 +577,7 @@ class accTable{
 
         parentElement.append(this._tableElement);
 
+        this._dragHanlder = new dragHandler(this);
         this.readDataAndSet();
     }
     get DOMElement() {return this._tableElement;}
@@ -977,7 +1011,7 @@ class accTable{
         this._data.reassignItemCodes();
         var startingRowPosition = 2;//row that item starts
         this.createClassCell(startingRowPosition, [0]);
-        var incomeDrag = new dragHandler(this);
+        this._dragHanlder.setEvent();
     }
     rereadTable() { //Read and draw table again.
         this._tableElement.tBodies[0].remove();
@@ -1076,8 +1110,7 @@ function addNewItem() {
 
 
 document.getElementById('button').addEventListener('click', () => {
-    // addNewItem();
-    incomeTable1.data.removeClass([0,1]);
+    incomeTable1.data.insertNewItem([0,1,0]);
     incomeTable1.rereadTable();
 });
 
