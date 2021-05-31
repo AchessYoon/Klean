@@ -242,6 +242,8 @@ class dragHandler {
 
         this._mouseDownX = 0;
         this._mouseDownY = 0;
+        this._mouseDistX = 0;
+        this._mouseDistY = 0;
         this._objOffsetX = 0;
         this._objOffsetY = 0;
 
@@ -387,6 +389,8 @@ class dragHandler {
             document.addEventListener('mouseup', this._boundUpdateAfterDrag);
         }
     }
+
+    //move function
     normalizePath(originalPath) {
         var path = copyArray(originalPath);
         var normalPathLen = this._objPath.length;
@@ -422,7 +426,7 @@ class dragHandler {
         // Math.abs(floatingPos.y - rowPos.y) < rowPos.height / 2 //old criteria
         return false;
     }
-    moveRow() {
+    findPosToMoveIn() {
         let objRowPos = this._objChunk[0].rowIndex - this._table.tHeadLength,
             rows = this._table.DOMElement.querySelectorAll('tbody tr'),
             checkingRange = {
@@ -434,11 +438,10 @@ class dragHandler {
             var checkingPath = this.normalizePath(this._table.getRowPath(rows[i]));
             if (this._objPath.length != checkingPath.length) continue;
 
-            if(comparePath(this._objPath, checkingPath)!=0 && this.isMoveCondition(checkingPath)) {
-                this.moveRowAndUpdate(checkingPath);
-                break;
-            }
+            if(comparePath(this._objPath, checkingPath)!=0 && this.isMoveCondition(checkingPath))
+                return checkingPath;
         }
+        return null;
     }
     moveRowAndUpdate(normalizedToPath) {
         var beforePosX = this._objChunk[0].getBoundingClientRect().x;
@@ -456,42 +459,50 @@ class dragHandler {
         this._objOffsetX += afterPosX - beforePosX;
         this._objOffsetY += afterPosY - beforePosY;
     }
-    clacRemoveGraphic(x) {
-        var l = 400;
-        var t = 500;
-        if(x>650) return 500;
-        else{
-             return 500*Math.sin(x/500);
-        }
+    updateMoveGraphic() {
+        this._floatingChunk.style.opacity = 0.7;
+        this._floatingChunk.style.transform = 'translate3d(' 
+            + 0 + 'px, ' 
+            + this._mouseDistY + 'px, 0)';
     }
-    updateWhileDrag(event) {
-        var dx = event.clientX - this._mouseDownX;
-        var dy = event.clientY - this._mouseDownY;
-        if(dx>60 && dx>1.5*dy) {
-            this._floatingChunk.style.transform = 'translate3d(' 
-                + this.clacRemoveGraphic(dx) + 'px, ' 
-                + this._objOffsetY + 'px, 0)';
-            this._floatingChunk.style.opacity = Math.max(-0.7/230*dx + 580*0.7/230,0.35);
-            if(dx>650) document.addEventListener('mouseup', this._boundRemoveObjChunk);
-            else document.removeEventListener('mouseup', this._boundRemoveObjChunk);
-        }else{
-            this._floatingChunk.style.opacity = 0.7;
-            this._floatingChunk.style.transform = 'translate3d(' 
-                + 0 + 'px, ' 
-                + dy + 'px, 0)';
-        }
-        this.moveRow();
-    }
-    async removeObjChunk(){
+
+    //remove function
+    removeObjChunk(){
         console.log(this._objPath)
         this._table.data.removeClass(this._objPath, true);
         this._table.rereadTable();
         this.endDrag();
         document.removeEventListener('mouseup', this._boundRemoveObjChunk);
     }
+    clacRemoveGraphic(x) {
+        var l = 400;
+        var t = 500;
+        if(x>650) return 500;
+        else return 500*Math.sin(x/500);
+    }
+    updateRemoveGraphic() {
+        this._floatingChunk.style.transform = 'translate3d(' 
+            + this.clacRemoveGraphic(this._mouseDistX) + 'px, ' 
+            + this._objOffsetY + 'px, 0)';
+        this._floatingChunk.style.opacity = Math.max(-0.7/230*this._mouseDistX + 580*0.7/230,0.35);
+    }
+
+    updateWhileDrag(event) {
+        this._mouseDistX = event.clientX - this._mouseDownX;
+        this._mouseDistY = event.clientY - this._mouseDownY;
+        if(this._mouseDistX>60 && this._mouseDistX>1.5*this._mouseDistY) {
+            this.updateRemoveGraphic();
+            if(this._mouseDistX>650) document.addEventListener('mouseup', this._boundRemoveObjChunk);
+            else document.removeEventListener('mouseup', this._boundRemoveObjChunk);
+        }else{
+            this.updateMoveGraphic();
+            var posToMoveIn = this.findPosToMoveIn();
+            if(posToMoveIn) this.moveRowAndUpdate(posToMoveIn);
+        }
+    }
     endDrag() {
         this._objChunk = null;
-        // this._objPath = null;//syncroniztion problem
+        // this._objPath = null;//syncroniztion problem with remove function
         this._floatingChunk.remove();
         document.onselectstart = null;
         document.removeEventListener('mousemove', this._boundUpdateWhileDrag);
