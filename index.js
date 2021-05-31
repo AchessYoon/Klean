@@ -968,15 +968,16 @@ class accTable{
         var cell2 = row.insertCell();
         var cell3 = row.insertCell();
     }
-    createClassCell(rowPosition, classPath) {
-        if(classPath.length > this._data.hierarchy.length) return false;//class
-
-        var row = this._tableElement.rows[rowPosition];
+    createClassCell(row, classPath) {
         if(classPath.length > 1 && this._tableType[1]==this.EXPENDITURE) {
             var dragCell = this.setFunctionCell(row.insertCell(), this.DRAGHANDLE, classPath).setAttribute('rowspan', Math.max(2, (this.countClassRows(classPath))));
         }
         var cell = this.setClassCell(row.insertCell(), classPath);
         if(classPath.length > 1 && this._tableType[1]==this.EXPENDITURE) cell.classList.add('no-left-border');
+    }
+    createCellsRecursion(rowPosition, classPath){
+        var row = this._tableElement.rows[rowPosition];
+        this.createClassCell(row, classPath);
 
         var childPosition = rowPosition;
         var childrenCount = this._data.countSubclass(classPath);
@@ -988,7 +989,7 @@ class accTable{
             for(let i = 0; i < childrenCount; i++) {
                 var childDataPath = classPath.concat([i]);
                 if(areChildrenClass) {//children are also class
-                    this.createClassCell(childPosition, childDataPath);
+                    this.createCellsRecursion(childPosition, childDataPath);
                     childPosition += (this.countClassRows(childDataPath));
                 }else{//children are item
                     this.createItemCells(childPosition, childDataPath);
@@ -1047,7 +1048,7 @@ class accTable{
         this.createRowsRecursion([0]);
         this._data.reassignItemCodes();
         var startingRowPosition = 2;//row that item starts
-        this.createClassCell(startingRowPosition, [0]);
+        this.createCellsRecursion(startingRowPosition, [0]);
         this._dragHanlder.setEvent();
     }
     rereadTable() { //Read and draw table again.
