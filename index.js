@@ -627,7 +627,7 @@ class accTable{
     }
     countClassRows(classPath) { //count including empty class row
         if(classPath.length == this._data._hierarchy.length){//lowest class
-            return Math.max(2, this._data.countSubclass(classPath)+1);
+            return this._data.countSubclass(classPath)+1;//add 1 for sumRow
         } else {//sum row count in subclasses
             var rowCount = 0;
             if(this._data.countSubclass(classPath) == 0) rowCount = 1;
@@ -635,7 +635,7 @@ class accTable{
                 var subClassPath = classPath.concat([i]);
                 rowCount += this.countClassRows(subClassPath);
             }
-            return rowCount+1;
+            return rowCount+1;//add 1 for sumRow
         }
     }
     selectOnFocus(focusEvent) { //focusedCell must be an element
