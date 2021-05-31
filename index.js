@@ -291,7 +291,6 @@ class dragHandler {
                 chunk.push(rowToPush);
             }
         }
-        console.log(chunk);
         return chunk;
     }
     createFloatingChunk() {
@@ -627,13 +626,15 @@ class accTable{
     }
     countClassRows(classPath) { //count including empty class row
         if(classPath.length == this._data._hierarchy.length){//lowest class
-            return this._data.countSubclass(classPath)+1;//add 1 for sumRow
+            return Math.max(1, this._data.countSubclass(classPath))+1;//least 1 in empty case, add 1 for sumRow
         } else {//sum row count in subclasses
             var rowCount = 0;
             if(this._data.countSubclass(classPath) == 0) rowCount = 1;
-            for(let i = 0; i < this._data.countSubclass(classPath); i++){
-                var subClassPath = classPath.concat([i]);
-                rowCount += this.countClassRows(subClassPath);
+            else{
+                for(let i = 0; i < this._data.countSubclass(classPath); i++){
+                    var subClassPath = classPath.concat([i]);
+                    rowCount += this.countClassRows(subClassPath);
+                }
             }
             return rowCount+1;//add 1 for sumRow
         }
@@ -999,6 +1000,7 @@ class accTable{
                 }
             }
         }
+
         this.createSumCell(rowPosition+this.countClassRows(classPath)-1, classPath);
     }
     createSumRow(classPath){
