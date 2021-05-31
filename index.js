@@ -943,12 +943,14 @@ class accTable{
                 this.setItemCell(row.insertCell(), itemPath, this._itemCellComposition[i]);
         }
     }
-    createEmptyClassPlaceholderCell(row, classPath) {
+    cntColInClass(classPath){
         var colPerHierarchyLevel = 1;
         if(this._tableType[1].localeCompare(this.EXPENDITURE) == 0) colPerHierarchyLevel = 2;
-        var restColCount = (this._data.hierarchy.length - classPath.length) * colPerHierarchyLevel + this._itemCellComposition.length;
+        return (this._data.hierarchy.length - classPath.length) * colPerHierarchyLevel + this._itemCellComposition.length;
+    }
+    createEmptyClassPlaceholderCell(row, classPath) {
         var cell = row.insertCell();
-        cell.setAttribute('colspan', restColCount);
+        cell.setAttribute('colspan', this.cntColInClass(classPath));
         cell.classList.add(this.EMPTYCELL);
         cell.textContent = 'empty';
         row.classList.add(this.EMPTYROW + '-' + classPath);
@@ -961,7 +963,7 @@ class accTable{
         var addedColCountInRest = 1;
         if(this._tableType[1]==this.EXPENDITURE) addedColCountInRest = 4-classPath.length;
         sumTitleCell.textContent = "계";
-        sumTitleCell.setAttribute('colspan', this.data.hierarchy.length-1 + this._itemCellComposition.length + addedColCountInRest - classPath.length-4);
+        sumTitleCell.setAttribute('colspan', this.cntColInClass(classPath)-4);
 
         var cell0 = row.insertCell();
         var cell1 = row.insertCell();
