@@ -796,13 +796,8 @@ class accTable{
     //--Sum--
     updatePartialSum(classPath, updatedChildIdx=null) {
         var sumRow = document.getElementById(this.HTMLSumRowPrefix + classPath);
-        console.log(sumRow);
-        var feilds = [];
-        if(this._tableType[0]==this.PLANNING) {
-            feilds = [];
-        }else if(this._tableType[0]==this.CLOSING) {
-            feilds = ['예산', '결산'];
-        }
+        var feilds = [this._itemCellComposition[this._itemCellComposition.length-4]
+            ,this._itemCellComposition[this._itemCellComposition.length-3]];
 
         for(var i=0; i<2; i++) {
             var field = feilds[i];
