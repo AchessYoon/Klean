@@ -775,20 +775,30 @@ class accTable{
     }
 
     //--Percent--
-    calculatePercent(row) {
-        if(row.getElementsByClassName(this.HTMLPrefix+this._data.itemFields[4]).length==0) return;//table load not done
-        var budgetCell = row.getElementsByClassName(this.HTMLPrefix+'예산')[0];
-        var settlementCell = row.getElementsByClassName(this.HTMLPrefix+'결산')[0];
-        var percntCell = row.getElementsByClassName(this.HTMLPrefix+'집행률')[0];
+    calculatePercent(row, isSumRow = false) {
+        var denominatorCell = null;
+        var numeratorCell = null;
+        var percntCell = null;
+        if(isSumRow) {
+            denominatorCell = row.cells[row.cells.length-4];
+            numeratorCell = row.cells[row.cells.length-3];
+            percntCell = row.cells[row.cells.length-2];
+            console.log(denominatorCell);
+        }else {
+            if(row.getElementsByClassName(this.HTMLPrefix+this._data.itemFields[4]).length==0) return;//table load not done
+            denominatorCell = row.getElementsByClassName(this.HTMLPrefix+'예산')[0];
+            numeratorCell = row.getElementsByClassName(this.HTMLPrefix+'결산')[0];
+            percntCell = row.getElementsByClassName(this.HTMLPrefix+'집행률')[0];
+        }
 
-        if(!percntCell) return;// percntCell doesn't exist while creating table
+        if(!percntCell) return;// percntCell doesn't exist
 
-        if(budgetCell.hasAttribute('number-data') && settlementCell.hasAttribute('number-data')) {
-            if(budgetCell.getAttribute('number-data') == 0) percntCell.textContent = '신설';
+        if(denominatorCell.hasAttribute('number-data') && numeratorCell.hasAttribute('number-data')) {
+            if(denominatorCell.getAttribute('number-data') == 0) percntCell.textContent = '신설';
             else {
-                var budget = Number(budgetCell.getAttribute('number-data'));
-                var settlement = Number(settlementCell.getAttribute('number-data'));
-                percntCell.textContent = parseFloat(settlement/budget*100).toFixed(2)+'%';
+                var denominator = Number(denominatorCell.getAttribute('number-data'));
+                var numerator = Number(numeratorCell.getAttribute('number-data'));
+                percntCell.textContent = parseFloat(numerator/denominator*100).toFixed(2)+'%';
             }
         } else {percntCell.textContent = '';}
     }
@@ -802,7 +812,6 @@ class accTable{
         for(var i=0; i<2; i++) {
             var field = feilds[i];
             var sumCell = sumRow.getElementsByClassName(this.HTMLSumCellPrefix + field)[0];
-            console.log(sumCell);
             var sum = null;
 
             if(classPath.length == this._data.hierarchy.length)//lowest level class
@@ -827,6 +836,7 @@ class accTable{
             }
             sumCell.setAttribute('number-data', sum);
         }
+        this.calculatePercent(sumRow, true);
     }
     bubbleUpdatePartialSum(classPath) {
         if(document.getElementById(this.HTMLSumRowPrefix + classPath).cells.length==0) return;//table load not done
