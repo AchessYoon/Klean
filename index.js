@@ -776,7 +776,7 @@ class accTable{
 
     //--Percent--
     calculatePercent(row) {
-        if(row.getElementsByClassName(this.HTMLPrefix+this._data.itemFields[4]).length==0) return;//item not load
+        if(row.getElementsByClassName(this.HTMLPrefix+this._data.itemFields[4]).length==0) return;//item not loaded
         var budgetCell = row.getElementsByClassName(this.HTMLPrefix+'예산')[0];
         var settlementCell = row.getElementsByClassName(this.HTMLPrefix+'결산')[0];
         var percntCell = row.getElementsByClassName(this.HTMLPrefix+'집행률')[0];
@@ -875,12 +875,12 @@ class accTable{
         if(!cell.hasChildNodes()) return false;
         cell.textContent = cell.textContent.replace(/[^0-9]/gm, '');
     }
-    amountCellPrepareEdit(focusEvent) {
+    amountCellPrepareKeyboardEdit(focusEvent) {
         var amountCell = focusEvent.target;
         amountCell.textContent = amountCell.getAttribute('number-data');
         amountCell.style.textAlign = "left"
     }
-    amountCellFormat(amountCell) {
+    amountCellFormatAndUpdate(amountCell) {
         this.removeExceptNum(amountCell);
 
         if(amountCell.textContent == '' || parseInt(amountCell.textContent) == '0') {
@@ -900,7 +900,7 @@ class accTable{
         var itemPath = copyArray(JSON.parse(amountCell.parentElement.getAttribute('path')));
         //this.bubbleUpdatePartialSum(itemPath.pop());
     }
-    amountCellAfterEdit(event) { //Only in case of keyboard input
+    amountCellAfterKeyboardEdit(event) {
         event = event;//IE not supported
         if((event.ctrlKey||event.metaKey) && event.keyCode==86) return;//prevent function at ctrl+v
         if(event.shiftKey && (event.keyCode==37||event.keyCode==39)) return;//prevent function at shift+arrow
@@ -922,10 +922,10 @@ class accTable{
         this.restoreSelection(cell, selectionLength + cell.textContent.length - originalLength, 0);
     }
     setAmountCellAutoFormatting(amountCell) {
-        amountCell.addEventListener('focus', this.amountCellPrepareEdit.bind(this));
-        amountCell.addEventListener('blur', () => {this.amountCellFormat(amountCell);});//includes updating datum
+        amountCell.addEventListener('focus', this.amountCellPrepareKeyboardEdit.bind(this));
+        amountCell.addEventListener('blur', () => {this.amountCellFormatAndUpdate(amountCell);});
         amountCell.addEventListener('keypress', (e) => {if((e.keyCode < 48) || (e.keyCode > 57)) e.returnValue = false;}); // keydown, keyup, compositionupdate
-        amountCell.addEventListener('keyup', this.amountCellAfterEdit.bind(this));
+        amountCell.addEventListener('keyup', this.amountCellAfterKeyboardEdit.bind(this));
         amountCell.addEventListener('paste', this.amountCellAfterPaste.bind(this));
     }
 
@@ -956,7 +956,7 @@ class accTable{
         case '예산'://예산
             cell.classList.add(this.HTMLPrefix + itemCellType);
             cell.setAttribute('contenteditable', true);
-            this.amountCellFormat(cell);//initial formatting
+            this.amountCellFormatAndUpdate(cell);//initial formatting
             this.setAmountCellAutoFormatting(cell);//includes updating datum
             cell.addEventListener('focus', this.selectOnFocus);
             cell.addEventListener('blur', (e) => {e.target.scroll(0,0);});
@@ -965,7 +965,7 @@ class accTable{
         case '결산'://결산
             cell.classList.add(this.HTMLPrefix + itemCellType);
             cell.setAttribute('contenteditable', true);
-            this.amountCellFormat(cell);//initial formatting
+            this.amountCellFormatAndUpdate(cell);//initial formatting
             this.setAmountCellAutoFormatting(cell);//includes updating datum
             cell.addEventListener('focus', this.selectOnFocus);
             cell.addEventListener('blur', (e) => {e.target.scroll(0,0);});
