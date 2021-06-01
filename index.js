@@ -601,6 +601,11 @@ class accTable{
     get DRAGHANDLE() {return 'drag-handle-cell';}
     get EMPTYROW() {return 'empty-placeholder-row';}
     get EMPTYCELL() {return 'empty-placeholder-cell';}
+    SUM(level) {
+        if(level=='high') return this.HTMLPrefix + 'sum-high';
+        else if(level=='mid') return this.HTMLPrefix + 'sum-mid';
+        else if(level=='low') return this.HTMLPrefix + 'sum-low';
+    }
 
     //--Helper functions--
     // getClassCells(classLevel) {
@@ -963,8 +968,28 @@ class accTable{
         var sumTitleCell = row.insertCell();
         var addedColCountInRest = 1;
         if(this._tableType[1]==this.EXPENDITURE) addedColCountInRest = 4-classPath.length;
-        sumTitleCell.textContent = "계";
         sumTitleCell.setAttribute('colspan', this.cntColInClass(classPath)-4);
+
+        if(this._tableType[1]==this.INCOME) {
+            if(classPath.length == 1) {
+                sumTitleCell.textContent = "총계";
+                sumTitleCell.classList.add(this.SUM('high'));
+            }else{
+                sumTitleCell.textContent = "계";
+                sumTitleCell.classList.add(this.SUM('low'));
+            }
+        }else if(this._tableType[1]==this.EXPENDITURE) {
+            if(classPath.length == 1) {
+                sumTitleCell.textContent = "총계";
+                sumTitleCell.classList.add(this.SUM('high'));
+            }else if(classPath.length == 2) {
+                sumTitleCell.textContent = "합계";
+                sumTitleCell.classList.add(this.SUM('mid'));
+            }else{
+                sumTitleCell.textContent = "계";
+                sumTitleCell.classList.add(this.SUM('low'));
+            }
+        }
 
         var cell0 = row.insertCell();
         var cell1 = row.insertCell();
