@@ -180,6 +180,15 @@ class accData {
         return this.content[classPath[0]][1][classPath[1]][1][classPath[2]][0];
         }
     }
+    setClassName(classPath, newName) {
+        if (classPath.length == 1) {
+            this.content[classPath[0]][0] = newName;
+        } else if(classPath.length == 2) {
+            this.content[classPath[0]][1][classPath[1]][0] = newName;
+        } else if(classPath.length == 3) {
+            this.content[classPath[0]][1][classPath[1]][1][classPath[2]][0] = newName;
+        }
+    }
     countItemsInClass(classPath) {
         if(classPath.length == this._hierarchy.length){//lowest class
             return this.countSubclasses(classPath);
@@ -657,6 +666,12 @@ class accTable{
         var feildIdx = cell.getAttribute('feild-idx');
         this._data.setItemField(itemPath, feildIdx, feildData);
     }
+    snycClassName(event) {//classCell, className = classCell.textContent) {//snyc from table to data
+        var classCell = event.target; 
+        var className = classCell.textContent
+        var classPath = JSON.parse(classCell.getAttribute('path'));
+        this._data.setClassName(classPath, className);
+    }
     countClassRows(classPath) { //count including empty class row
         if(classPath.length == this._data._hierarchy.length){//lowest class
             return Math.max(1, this._data.countSubclasses(classPath))+1;//least 1 in empty case, add 1 for sumRow
@@ -783,7 +798,6 @@ class accTable{
             denominatorCell = row.cells[row.cells.length-4];
             numeratorCell = row.cells[row.cells.length-3];
             percntCell = row.cells[row.cells.length-2];
-            console.log(denominatorCell);
         }else {
             if(row.getElementsByClassName(this.HTMLPrefix+this._data.itemFields[4]).length==0) return;//table load not done
             denominatorCell = row.getElementsByClassName(this.HTMLPrefix+'예산')[0];
@@ -1023,6 +1037,10 @@ class accTable{
         cell.classList.add(this.HTMLClassClass, 
                            this.HTMLPrefix + this.data.hierarchy[classPath.length-1], 
                            this.HTMLPrefix + classPath);
+        if(this._tableType[1].localeCompare(this.EXPENDITURE) == 0 && 1<classPath.length) {
+            cell.setAttribute('contenteditable', true);
+            cell.addEventListener('blur', this.snycClassName.bind(this)); 
+        }
         return cell;
     }
     createItemCells(rowPosition, itemPath) {
@@ -1248,12 +1266,8 @@ function addNewItem() {
 
 
 document.getElementById('button').addEventListener('click', () => {
-    incomeTable1.updatePartialSum([0,0]);
-    incomeTable1.updatePartialSum([0,1]);
-    incomeTable1.updatePartialSum([0,2]);
-    incomeTable1.updatePartialSum([0]);
-    incomeTable1.updatePartialSum([0]);
-    //incomeTable1.rereadTable();
+    incomeTable1.snycClassName([0,0],'aaa');
+    incomeTable1.rereadTable();
 });
 
 document.getElementById('reload-button').addEventListener('click', () => {
