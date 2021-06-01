@@ -1055,9 +1055,6 @@ class accTable{
         cell.setAttribute('colspan', this.cntColInClass(classPath));
         cell.classList.add(this.EMPTYCELL);
         cell.textContent = 'empty';
-        row.classList.add(this.EMPTYROW + '-' + classPath);
-        row.classList.add(this.EMPTYROW);
-        row.setAttribute('path', JSON.stringify(classPath));
     }
     createSumCells(rowPosition, classPath) {
         var row = this._tableElement.rows[rowPosition];
@@ -1139,6 +1136,8 @@ class accTable{
         if(this._data.countSubclasses(classPath) == 0){//class doesn't have subclass, empty
                 var row = accTbody.insertRow();
                 row.id = this.HTMLRowPrefix + classPath;
+                row.classList.add(this.EMPTYROW, this.EMPTYROW + '-' + classPath);
+                row.setAttribute('path', JSON.stringify(classPath));
         }else if(classPath.length < this._data._hierarchy.length){//not lowest level class//recurse subclass
             for(let i = 0; i < this._data.countSubclasses(classPath); i++)
                 this.createRowsRecursion(classPath.concat([i]));
@@ -1147,8 +1146,8 @@ class accTable{
                 var itemPath = classPath.concat([i]);
                 var row = accTbody.insertRow();
                 row.id = this.HTMLRowPrefix + itemPath;
-                row.setAttribute('path', JSON.stringify(itemPath));
                 row.classList.add(this.HTMLItemClass);
+                row.setAttribute('path', JSON.stringify(itemPath));
             }
         }
         this.createSumRow(classPath);
