@@ -54,6 +54,15 @@ class accData {
             return this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]][1][itemPath[3]];
         else console.log('error');
     }
+    getItemField(itemPath, feildIdx) {
+        // console.log(itemPath);
+        // console.log(typeof this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]][feildIdx]);
+        if(itemPath.length == 3)
+            return this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]][feildIdx];
+        else if(itemPath.length == 4)
+            return this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]][1][itemPath[3]][feildIdx];
+        else console.log('error');
+    }
     setItemField(itemPath, feildIdx, feildData) {
         if(itemPath.length == 3)
             this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]][feildIdx] = feildData;
@@ -232,6 +241,22 @@ class accData {
             var itemCode = this.calculateItemCode(itemPath);
             this.setItemField(itemPath, this.fieldNum('코드'), itemCode);
         }
+    }
+
+    //--Sum--
+    calculateSum(classPath, fieldName){
+        var classData = this.getClassData(classPath);
+        var sum = 0;
+
+        if(classPath.length==this._hierarchy.length) {
+            if(classData.length==0) return 0;
+            for(var i=0; i<classData.length; i++) 
+                sum += parseInt(this.getItemField(classPath.concat(i), this.fieldNum(fieldName)));//using parseInt becase the func returns string for unknown reason
+        }else{
+            for(var i=0; i<classData.length; i++) 
+                sum += this.calculateSum(classPath.concat(i), fieldName);
+        }
+        return sum;
     }
 }
 
@@ -1102,8 +1127,8 @@ var incomeDataSource1 =
             ['r1c2', 
                 [
                     ['학생', [
-                        ['이월금', 'AA', '4742007', '4742007', '', ''],
-                        ['학생회비 지원금', 'AB', '3046816', '0', '', '']
+                        ['이월금', 'AA', 4742007, 4742007, '', ''],
+                        ['학생회비 지원금', 'AB', 3046816, 0, '', '']
                     ]]
                     , 
                     ['본회계', [
@@ -1160,8 +1185,8 @@ function addNewItem() {
 
 
 document.getElementById('button').addEventListener('click', () => {
-    incomeTable1.data.insertNewItem([0,1,0]);
-    incomeTable1.rereadTable();
+    console.log(incomeTable1.data.calculateSum([0],"예산"));
+    //incomeTable1.rereadTable();
 });
 
 document.getElementById('reload-button').addEventListener('click', () => {
