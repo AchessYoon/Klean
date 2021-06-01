@@ -173,10 +173,10 @@ class accData {
     }
     countItemsInClass(classPath) {
         if(classPath.length == this._hierarchy.length){//lowest class
-            return this.countSubclass(classPath);
+            return this.countSubclasses(classPath);
         } else {//sum item-count in subclasses
             var itemCount = 0;
-            for(let i = 0; i < this.countSubclass(classPath); i++){
+            for(let i = 0; i < this.countSubclasses(classPath); i++){
                 // var subClassPath = classPath.slice();
                 // subClassPath.push(i);
                 var subClassPath = classPath.concat([i]);
@@ -185,7 +185,7 @@ class accData {
             return itemCount;
         }
     }
-    countSubclass(classPath) {//I dont know why but didnt want to name countSubclasses...
+    countSubclasses(classPath) {
         return this.getClassData(classPath).length;
     }
     getDataPathRecursion(idxInClass, dataPath) {
@@ -631,12 +631,12 @@ class accTable{
     }
     countClassRows(classPath) { //count including empty class row
         if(classPath.length == this._data._hierarchy.length){//lowest class
-            return Math.max(1, this._data.countSubclass(classPath))+1;//least 1 in empty case, add 1 for sumRow
+            return Math.max(1, this._data.countSubclasses(classPath))+1;//least 1 in empty case, add 1 for sumRow
         } else {//sum row count in subclasses
             var rowCount = 0;
-            if(this._data.countSubclass(classPath) == 0) rowCount = 1;
+            if(this._data.countSubclasses(classPath) == 0) rowCount = 1;
             else{
-                for(let i = 0; i < this._data.countSubclass(classPath); i++){
+                for(let i = 0; i < this._data.countSubclasses(classPath); i++){
                     var subClassPath = classPath.concat([i]);
                     rowCount += this.countClassRows(subClassPath);
                 }
@@ -1008,7 +1008,7 @@ class accTable{
         this.createClassCell(row, classPath);
 
         var childPosition = rowPosition;
-        var childrenCount = this._data.countSubclass(classPath);
+        var childrenCount = this._data.countSubclasses(classPath);
         var areChildrenClass = classPath.length < this._data.hierarchy.length;
 
         if(childrenCount == 0) {
@@ -1037,14 +1037,14 @@ class accTable{
     }
     createRowsRecursion(classPath) {
         var accTbody = this._tableElement.tBodies[0];
-        if(this._data.countSubclass(classPath) == 0){//class doesn't have subclass, empty
+        if(this._data.countSubclasses(classPath) == 0){//class doesn't have subclass, empty
                 var row = accTbody.insertRow();
                 row.id = this.HTMLRowPrefix + classPath;
         }else if(classPath.length < this._data._hierarchy.length){//not lowest level class//recurse subclass
-            for(let i = 0; i < this._data.countSubclass(classPath); i++)
+            for(let i = 0; i < this._data.countSubclasses(classPath); i++)
                 this.createRowsRecursion(classPath.concat([i]));
         }else{//lowest level class
-            for(var i = 0; i < this._data.countSubclass(classPath); i++) {
+            for(var i = 0; i < this._data.countSubclasses(classPath); i++) {
                 var itemPath = classPath.concat([i]);
                 var row = accTbody.insertRow();
                 row.id = this.HTMLRowPrefix + itemPath;
