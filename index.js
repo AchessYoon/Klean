@@ -816,7 +816,15 @@ class accTable{
                     sum += parseInt(childClassSumCell.getAttribute('number-data'));
                 }
             }
-            sumCell.textContent = sum;
+
+            if(sum == '0') {
+                sumCell.textContent = '-';
+                sumCell.style.textAlign = "center"
+            }else{
+                var formatter = new Intl.NumberFormat('ko-KR', {style: 'currency', currency: 'KRW',});
+                sumCell.textContent = formatter.format(sum);
+                sumCell.style.textAlign = "left"
+            }
             sumCell.setAttribute('number-data', sum);
         }
     }
