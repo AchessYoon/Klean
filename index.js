@@ -244,7 +244,7 @@ class accData {
     }
 
     //--Sum--
-    calculateSum(classPath, fieldName){
+    calcPartialSum(classPath, fieldName){
         var classData = this.getClassData(classPath);
         var sum = 0;
 
@@ -254,7 +254,7 @@ class accData {
                 sum += parseInt(this.getItemField(classPath.concat(i), this.fieldNum(fieldName)));//using parseInt becase the func returns string for unknown reason
         }else{//sum subclasses
             for(var i=0; i<classData.length; i++) 
-                sum += this.calculateSum(classPath.concat(i), fieldName);
+                sum += this.calcPartialSum(classPath.concat(i), fieldName);
         }
         return sum;
     }
@@ -612,6 +612,7 @@ class accTable{
     get HTMLRowPrefix() {return this.HTMLIDPrefix + 'row-';}
     get HTMLSumRowClass() {return this.HTMLRowPrefix + 'sum';}
     get HTMLSumRowPrefix() {return this.HTMLRowPrefix + 'sum-';}
+    get HTMLSumCellPrefix() {return this.HTMLRowPrefix + 'sum-';}
     get HTMLClassClass() {return this.HTMLPrefix + 'class';}
     get HTMLClassPrefix() {return this.HTMLIDPrefix + 'class-';}
     get HTMLItemClass() {return this.HTMLPrefix + 'item';}
@@ -621,6 +622,8 @@ class accTable{
         // this.HTMLHeadPrefix = this.HTMLPrefix + 'h-';
 
     //keywords
+    get PLANNING() {return 'planning';}
+    get CLOSING() {return 'closing';}
     get INCOME() {return 'income';}
     get EXPENDITURE() {return 'expenditure';}
     get DRAGHANDLE() {return 'drag-handle-cell';}
@@ -771,7 +774,7 @@ class accTable{
         return thead;
     }
 
-    //--Item Percent--
+    //--Percent--
     calculatePercent(row) {
         if(row.getElementsByClassName(this.HTMLPrefix+this._data.itemFields[4]).length==0) return;//item not load
         var budgetCell = row.getElementsByClassName(this.HTMLPrefix+'예산')[0];
@@ -789,6 +792,47 @@ class accTable{
             }
         } else {percntCell.textContent = '';}
     }
+
+    //--Sum--
+    updatePartialSum(classPath, updatedChildIdx=null) {
+        var sumRow = document.getElementById(this.HTMLSumRowPrefix + classPath);
+        console.log(sumRow);
+        var feilds = [];
+        if(this._tableType[0]==this.PLANNING) {
+            feilds = [];
+        }else if(this._tableType[0]==this.CLOSING) {
+            feilds = ['예산', '결산'];
+        }
+
+        for(var i=0; i<2; i++) {
+            var field = feilds[i];
+            var sumCell = sumRow.getElementsByClassName(this.HTMLSumCellPrefix + field)[0];
+            console.log(sumCell);
+            var sum = null;
+
+            if(classPath.length == this._data.hierarchy.length)//lowest level class
+                sum = this._data.calcPartialSum(classPath, field);
+            else{
+                sum = 0;
+                for(var j=0; j<this._data.countSubclasses(classPath); j++){
+                    var childPath = classPath.concat(j);
+                    var childClassSumRow = document.getElementById(this.HTMLSumRowPrefix + childPath);
+                    var childClassSumCell = childClassSumRow.getElementsByClassName(this.HTMLSumCellPrefix + field)[0];
+                    sum += parseInt(childClassSumCell.getAttribute('number-data'));
+                }
+            }
+            sumCell.textContent = sum;
+            sumCell.setAttribute('number-data', sum);
+        }
+    }
+    bubbleUpdatePartialSum(classPath) {
+        var classPathCopy = copyArray(classPath);
+        while(0<classPathCopy.length) {
+            this.updatePartialSum(classPathCopy);
+            classPathCopy.pop();
+        }
+    }
+
 
     //--Cell formatting functions--    
     handlePaste(pasteEvent, isNewlineAllowed = false) {
@@ -858,6 +902,8 @@ class accTable{
             amountCell.style.textAlign = "left"
         }
         this.calculatePercent(amountCell.parentElement);
+        var itemPath = copyArray(JSON.parse(amountCell.parentElement.getAttribute('path')));
+        //this.bubbleUpdatePartialSum(itemPath.pop());
     }
     amountCellAfterEdit(event) { //Only in case of keyboard input
         event = event;//IE not supported
@@ -1017,7 +1063,9 @@ class accTable{
         }
 
         var cell0 = row.insertCell();
+        cell0.classList.add(this.HTMLSumCellPrefix + this._itemCellComposition[this._itemCellComposition.length-4]);
         var cell1 = row.insertCell();
+        cell1.classList.add(this.HTMLSumCellPrefix + this._itemCellComposition[this._itemCellComposition.length-3]);
         var cell2 = row.insertCell();
         var cell3 = row.insertCell();
     }
@@ -1185,7 +1233,11 @@ function addNewItem() {
 
 
 document.getElementById('button').addEventListener('click', () => {
-    console.log(incomeTable1.data.calculateSum([0],"예산"));
+    incomeTable1.updatePartialSum([0,0]);
+    incomeTable1.updatePartialSum([0,1]);
+    incomeTable1.updatePartialSum([0,2]);
+    incomeTable1.updatePartialSum([0]);
+    incomeTable1.updatePartialSum([0]);
     //incomeTable1.rereadTable();
 });
 
