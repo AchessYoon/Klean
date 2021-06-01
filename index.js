@@ -301,7 +301,6 @@ class dragHandler {
     setEvent() {
         var dragHandles = this._table.DOMElement.getElementsByClassName(this._table.DRAGHANDLE);
         for(let i = 0; i < dragHandles.length; i++) {
-            dragHandles[i].addEventListener('dbclick', this.insertNew.bind(this));
             dragHandles[i].addEventListener('mousedown', this.startDrag.bind(this));
         }
     }
@@ -420,16 +419,19 @@ class dragHandler {
     startDrag(event) {
         if(event.button != 0) return true;
 
+        this._objPath = JSON.parse(event.target.getAttribute('path'));
+        this._objChunk = this.getChunk(this._objPath);
+
         var prevClickMoment = this._clickedMoment;
         this._clickedMoment = Date.now();
 
         if(this._clickedMoment - prevClickMoment < 300){
-            this.insertNew();
+            this._table.insertNew(this._objPath);
+            this.endDrag();
+            this._clickedMoment = 0;
         }else{
             document.onselectstart = () => {return false;}//prevent error might be occured by drag selection
             //document.addEventListener('selectstart', returnFalse);
-            this._objPath = JSON.parse(event.target.getAttribute('path'));
-            this._objChunk = this.getChunk(this._objPath);
 
             if(this._objChunk) {
                 this.createFloatingChunk();
@@ -561,16 +563,7 @@ class dragHandler {
         document.removeEventListener('mousemove', this._boundUpdateWhileDrag);
         document.removeEventListener('mouseup', this._boundUpdateAfterDrag);
         this._table.rereadTable();
-    }
-
-    //insert function
-    insertNew() {
-        var objPath = JSON.parse(event.target.getAttribute('path'));
-        objPath[objPath.length-1] ++;
-        if(objPath.length == this._table.data.hierarchy.length+1) this._table.data.insertNewItem(objPath);
-        else this._table.data.insertNewClass(objPath);
-        this._table.rereadTable();
-        this._clickedMoment = 0;
+        //leave this._clickedMoment to trigger insertNew
     }
 }
 
@@ -1172,6 +1165,13 @@ class accTable{
     rereadTable() { //Read and draw table again.
         this._tableElement.tBodies[0].remove();
         this.readDataAndSet();
+    }
+
+    //--Insert--
+    insertNew(objPath) {
+        objPath[objPath.length-1] ++;
+        if(objPath.length == this._data.hierarchy.length+1) this._data.insertNewItem(objPath);
+        else this._data.insertNewClass(objPath);
     }
 
     //--Show/hide row--
