@@ -776,7 +776,7 @@ class accTable{
 
     //--Percent--
     calculatePercent(row) {
-        if(row.getElementsByClassName(this.HTMLPrefix+this._data.itemFields[4]).length==0) return;//item not loaded
+        if(row.getElementsByClassName(this.HTMLPrefix+this._data.itemFields[4]).length==0) return;//table load not done
         var budgetCell = row.getElementsByClassName(this.HTMLPrefix+'예산')[0];
         var settlementCell = row.getElementsByClassName(this.HTMLPrefix+'결산')[0];
         var percntCell = row.getElementsByClassName(this.HTMLPrefix+'집행률')[0];
@@ -794,7 +794,7 @@ class accTable{
     }
 
     //--Sum--
-    updatePartialSum(classPath, updatedChildIdx=null) {
+    updatePartialSum(classPath) {
         var sumRow = document.getElementById(this.HTMLSumRowPrefix + classPath);
         var feilds = [this._itemCellComposition[this._itemCellComposition.length-4]
             ,this._itemCellComposition[this._itemCellComposition.length-3]];
@@ -821,9 +821,10 @@ class accTable{
         }
     }
     bubbleUpdatePartialSum(classPath) {
+        if(document.getElementById(this.HTMLSumRowPrefix + classPath).cells.length==0) return;//table load not done
         var classPathCopy = copyArray(classPath);
         while(0<classPathCopy.length) {
-            this.updatePartialSum(classPathCopy);
+            this.updatePartialSum(copyArray(classPathCopy));
             classPathCopy.pop();
         }
     }
@@ -897,8 +898,8 @@ class accTable{
             amountCell.style.textAlign = "left"
         }
         this.calculatePercent(amountCell.parentElement);
-        var itemPath = copyArray(JSON.parse(amountCell.parentElement.getAttribute('path')));
-        //this.bubbleUpdatePartialSum(itemPath.pop());
+        var itemPath = JSON.parse(amountCell.parentElement.getAttribute('path'));
+        this.bubbleUpdatePartialSum(itemPath.slice(0,itemPath.length-1));
     }
     amountCellAfterKeyboardEdit(event) {
         event = event;//IE not supported
@@ -1063,6 +1064,7 @@ class accTable{
         cell1.classList.add(this.HTMLSumCellPrefix + this._itemCellComposition[this._itemCellComposition.length-3]);
         var cell2 = row.insertCell();
         var cell3 = row.insertCell();
+        this.updatePartialSum(classPath);
     }
     createClassCell(row, classPath) {
         if(classPath.length > 1 && this._tableType[1]==this.EXPENDITURE) {
