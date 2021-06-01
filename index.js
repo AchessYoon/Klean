@@ -248,11 +248,11 @@ class accData {
         var classData = this.getClassData(classPath);
         var sum = 0;
 
-        if(classPath.length==this._hierarchy.length) {
+        if(classPath.length==this._hierarchy.length) {//lowest level class, sum data of items
             if(classData.length==0) return 0;
             for(var i=0; i<classData.length; i++) 
                 sum += parseInt(this.getItemField(classPath.concat(i), this.fieldNum(fieldName)));//using parseInt becase the func returns string for unknown reason
-        }else{
+        }else{//sum subclasses
             for(var i=0; i<classData.length; i++) 
                 sum += this.calculateSum(classPath.concat(i), fieldName);
         }
