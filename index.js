@@ -1029,7 +1029,7 @@ class accTable{
         row.classList.add(this.EMPTYROW);
         row.setAttribute('path', JSON.stringify(classPath));
     }
-    createSumCell(rowPosition, classPath) {
+    createSumCells(rowPosition, classPath) {
         var row = this._tableElement.rows[rowPosition];
         var sumTitleCell = row.insertCell();
         var addedColCountInRest = 1;
@@ -1094,7 +1094,7 @@ class accTable{
             }
         }
 
-        this.createSumCell(rowPosition+this.countClassRows(classPath)-1, classPath);
+        this.createSumCells(rowPosition+this.countClassRows(classPath)-1, classPath);
     }
     createSumRow(classPath){
         var accTbody = this._tableElement.tBodies[0];
