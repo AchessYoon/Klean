@@ -993,7 +993,6 @@ class accTable{
 
             cell.append(select);
             select.addEventListener('blur', (e) => {
-                console.log('select');
             });
             break;
         case '항목'://항목
