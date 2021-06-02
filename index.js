@@ -1304,6 +1304,7 @@ document.getElementById('button').addEventListener('click', () => {
 
 document.getElementById('reload-button').addEventListener('click', () => {
     incomeTable1.rereadTable();
+    expenditureTable1.rereadTable();
 });
 
 document.getElementById('hide-button').addEventListener('click', () => {
