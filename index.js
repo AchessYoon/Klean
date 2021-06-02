@@ -967,6 +967,10 @@ class accTable{
         cell.textContent = this._data.getItem(itemPath)[itemFieldIdx];
         cell.setAttribute('feild-idx', itemFieldIdx);
         switch(itemCellType){
+        case '출처'://출처
+            cell.classList.add(this.HTMLPrefix + itemCellType,
+                this.HTMLPrefix + itemCellType + '-' + cell.textContent);
+            break;
         case '항목'://항목
             cell.classList.add(this.HTMLPrefix + itemCellType);
             cell.setAttribute('contenteditable', true);
