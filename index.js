@@ -857,6 +857,32 @@ class accTable{
         }
     }
 
+    //--After item source select--
+    updateItemSrcSelect(cell){
+
+        cell.classList.remove(this.HTMLPrefix + '출처-학생',
+            this.HTMLPrefix + '출처-자치',
+            this.HTMLPrefix + '출처-본회계');
+
+        var select = cell.getElementsByTagName('select')[0];
+        var selectedIdx = select.selectedIndex;
+        var selected = null;
+        switch(selectedIdx){
+            case 0://학생
+                selected = '학생';
+                cell.classList.add(this.HTMLPrefix + '출처-' + selected);
+                break;
+            case 1://자치
+                selected = '자치';
+                cell.classList.add(this.HTMLPrefix + '출처-' + selected);
+                break;
+            case 2://본회계
+                selected = '본회계';
+                cell.classList.add(this.HTMLPrefix + '출처-' + selected);
+                break;
+        }
+        this.snycCellToData(cell, selected);
+    }
 
     //--Cell formatting functions--    
     handlePaste(pasteEvent, isNewlineAllowed = false) {
@@ -987,12 +1013,14 @@ class accTable{
             opt2.textContent = '본회계';
             opt2.setAttribute('value', '본회계');
             select.append(opt2);
-            if(fieldData='학생') opt0.setAttribute('selected', true);
-            else if(fieldData='차지') opt1.setAttribute('selected', true);
-            else if(fieldData='본회계') opt2.setAttribute('selected', true);
+
+            if(fieldData=='학생') opt0.setAttribute('selected', true);
+            else if(fieldData=='자치') opt1.setAttribute('selected', true);
+            else if(fieldData=='본회계') opt2.setAttribute('selected', true);
 
             cell.append(select);
-            select.addEventListener('blur', (e) => {
+            select.addEventListener('change', (e) => {
+                this.updateItemSrcSelect(e.target.parentElement);
             });
             break;
         case '항목'://항목
