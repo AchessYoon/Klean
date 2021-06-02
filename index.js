@@ -371,7 +371,7 @@ class dragHandler {
         this._floatingChunk.id = 'drag-elem';
         this._floatingChunk.classList.add(this._table.HTMLTableClass);
 
-        document.getElementById('ui-container').appendChild(this._floatingChunk);
+        document.getElementById('ui-container').append(this._floatingChunk);
 
         this._floatingChunk.style.position = 'fixed';
         this._floatingChunk.style.top = this._objChunk[0].getBoundingClientRect().y + 'px';
