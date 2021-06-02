@@ -450,24 +450,24 @@ class dragHandler {
     }
 
     //move function
-    normalizePath(originalPath) {
-        var path = copyArray(originalPath);
+    normalizePath(path) {
+        var pathCopy = copyArray(path);
         var normalPathLen = this._objPath.length;
-        if (normalPathLen < path.length) path = path.slice(0, normalPathLen);
-        else if (normalPathLen - path.length == 1) path.push('empty');
-        return path;
+        if (normalPathLen < pathCopy.length) pathCopy = pathCopy.slice(0, normalPathLen);
+        else if (normalPathLen - pathCopy.length == 1) pathCopy.push('empty');
+        return pathCopy;
     }
-    getChunkPos(originalChunkPath) {//only y position and height is valid
-        var chunkPath = copyArray(originalChunkPath);
-        var pathLength = chunkPath.length;
+    getChunkPos(chunkPath) {//only y position and height is valid
+        var chunkPathCopy = copyArray(chunkPath);
+        var pathLength = chunkPathCopy.length;
 
-        if(chunkPath[chunkPath.length-1]=='empty')//if row of empty class
-            chunkPath.pop();//get position of higher level class
+        if(chunkPathCopy[chunkPathCopy.length-1]=='empty')//if row of empty class
+            chunkPathCopy.pop();//get position of higher level class
 
         if(pathLength == this._table.data.hierarchy.length + 1) {//item chunk
-            return document.getElementById(this._table.HTMLRowPrefix + chunkPath).getBoundingClientRect();
+            return document.getElementById(this._table.HTMLRowPrefix + chunkPathCopy).getBoundingClientRect();
         }else{//class chunk
-            var classCell = this._table.DOMElement.getElementsByClassName(this._table.HTMLPrefix + chunkPath)[0];
+            var classCell = this._table.DOMElement.getElementsByClassName(this._table.HTMLPrefix + chunkPathCopy)[0];
             return classCell.getBoundingClientRect();
         }
     }
