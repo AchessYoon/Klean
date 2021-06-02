@@ -73,8 +73,9 @@ class accData {
     insertItem(itemPath, item) {
         if(itemPath.length == 3)
             this.content[itemPath[0]][1][itemPath[1]][1].splice(itemPath[2], 0, item);
-        else if(itemPath.length == 4)
+        else if(itemPath.length == 4){
             this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]][1].splice(itemPath[3], 0, item);
+        }
         else console.log('error');
     }
     insertNewItem(itemPath) {
@@ -426,7 +427,9 @@ class dragHandler {
         this._clickedMoment = Date.now();
 
         if(this._clickedMoment - prevClickMoment < 300){
-            this._table.insertNew(this._objPath);
+            var pathToInsert = copyArray(this._objPath);
+            pathToInsert[pathToInsert.length-1]++;
+            this._table.insertNew(pathToInsert);
             this.endDrag();
             this._clickedMoment = 0;
         }else{
@@ -1055,6 +1058,7 @@ class accTable{
         cell.setAttribute('colspan', this.cntColInClass(classPath));
         cell.classList.add(this.EMPTYCELL);
         cell.textContent = 'empty';
+        cell.addEventListener('dblclick', (()=>{this.insertNew(classPath.concat(0));}).bind(this));
     }
     createSumCells(rowPosition, classPath) {
         var row = this._tableElement.rows[rowPosition];
@@ -1168,9 +1172,9 @@ class accTable{
 
     //--Insert--
     insertNew(objPath) {
-        objPath[objPath.length-1] ++;
         if(objPath.length == this._data.hierarchy.length+1) this._data.insertNewItem(objPath);
         else this._data.insertNewClass(objPath);
+        this.rereadTable();
     }
 
     //--Show/hide row--
