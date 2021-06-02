@@ -964,12 +964,37 @@ class accTable{
         var itemFieldIdx = this._itemCellFieldMatch[itemCellIdx];
         if(itemCellIdx==-1) return;
 
-        cell.textContent = this._data.getItem(itemPath)[itemFieldIdx];
+        var fieldData = this._data.getItem(itemPath)[itemFieldIdx];
+        cell.textContent = fieldData;
         cell.setAttribute('feild-idx', itemFieldIdx);
         switch(itemCellType){
         case '출처'://출처
+            cell.textContent = '';
             cell.classList.add(this.HTMLPrefix + itemCellType,
-                this.HTMLPrefix + itemCellType + '-' + cell.textContent);
+                this.HTMLPrefix + itemCellType + '-' + fieldData);
+
+            var select = document.createElement('select');
+            select.setAttribute('name', itemCellType);
+            var opt0 = document.createElement('option');
+            opt0.textContent = '학생';
+            opt0.setAttribute('value', '학생');
+            select.append(opt0);
+            var opt1 = document.createElement('option');
+            opt1.textContent = '자치';
+            opt1.setAttribute('value', '자치');
+            select.append(opt1);
+            var opt2 = document.createElement('option');
+            opt2.textContent = '본회계';
+            opt2.setAttribute('value', '본회계');
+            select.append(opt2);
+            if(fieldData='학생') opt0.setAttribute('selected', true);
+            else if(fieldData='차지') opt1.setAttribute('selected', true);
+            else if(fieldData='본회계') opt2.setAttribute('selected', true);
+
+            cell.append(select);
+            select.addEventListener('blur', (e) => {
+                console.log('select');
+            });
             break;
         case '항목'://항목
             cell.classList.add(this.HTMLPrefix + itemCellType);
