@@ -21,10 +21,13 @@ function comparePath(arr1, arr2){
 
 
 class accData {
-    constructor(source, givenHierarchy, givenItemFields){
-        this._hierarchy = givenHierarchy;
-        this._itemFields = givenItemFields;
-        this._content = source;
+    constructor(givenData=[], accountType){
+        this._content = givenData;
+
+        this._accountType = accountType;
+        this._hierarchy = null;
+        this._itemFields = null;
+        this.applyAccountType();
     }
     get content() {
         return this._content;
@@ -34,6 +37,26 @@ class accData {
     }
     get itemFields() {
         return this._itemFields;
+    }
+    get type() {
+        return this._accountType;
+    }
+
+
+    applyAccountType() {
+        if(this._accountType[0] == 'planning' && this._accountType[1] == 'income'){
+            this._hierarchy = null;
+            this._itemFields = null;
+        }else if(this._accountType[0] == 'planning' && this._accountType[1] == 'expenditure'){
+            this._hierarchy = null;
+            this._itemFields = null;
+        }else if(this._accountType[0] == 'closing' && this._accountType[1] == 'income'){
+            this._hierarchy = ['기구', '출처'];
+            this._itemFields = ['항목', '코드', '예산', '결산', '집행률', '비고'];
+        }else if(this._accountType[0] == 'closing' && this._accountType[1] == 'expenditure'){
+            this._hierarchy = ['기구', '담당', '대항목'];
+            this._itemFields = ['항목', '출처', '코드', '예산', '결산', '집행률', '비고'];
+        }
     }
     fieldNum(fieldName) {//코드 관리를 위해 fieldNum은 변수가 아닌 string을 바로 인자로 호출
         return this._itemFields.indexOf(fieldName);
@@ -334,7 +357,7 @@ class dragHandler {
         for(var i = 0; i <this._objChunk.length; i++) {
             var chunkRow = this._objChunk[i].cloneNode(true);
 
-            if(this._table.mode[1]==this._table.INCOME) {
+            if(this._table.data.type[1]==this._table.INCOME) {
                 if(chunkRow.cells[0].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[0]))
                     chunkRow.cells[0].remove();
                 if(chunkRow.cells[0].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[1]))
@@ -343,7 +366,7 @@ class dragHandler {
                 chunkRow.insertCell(0).classList.add(this.INVISABLE);
             }
 
-            if(this._table.mode[1]==this._table.EXPENDITURE) {
+            if(this._table.data.type[1]==this._table.EXPENDITURE) {
                 if(chunkRow.cells[0].classList.contains(this._table.HTMLPrefix + this._table.data.hierarchy[0]))
                     chunkRow.cells[0].remove();
                 chunkRow.insertCell(0).classList.add(this.INVISABLE);
@@ -640,27 +663,22 @@ class dragHandler {
 }
 
 class accTable{
-    constructor(tableID, parentElement, tableType, givenData){
+    constructor(tableID, parentElement, givenData){
         this._tabelID = tableID;
-        this._tableType = tableType;
 
-        this.HTMLColPrefix = this.HTMLPrefix + 'col-';
-        this.HTMLHeadPrefix = this.HTMLPrefix + 'h-';
+        this._data = givenData;
 
-        this._dataHierarchy = null;
-        this._dataItemFields = null;
         this._itemCellComposition = null;
         this._itemCellFieldMatch = null;
         this.applyTableType();
         // this._classComposition = this.data.hierarchy;
 
-        this._data = new accData(givenData, this._dataHierarchy, this._dataItemFields);
-        this._dataHierarchy = null;
-        this._dataItemFields = null;
-
         this._columnShow = Array.from(
             {length: this.data.hierarchy.length + this._itemCellComposition.length}, 
             () => true); //[true, true, true, ..., true]
+
+        this.HTMLColPrefix = this.HTMLPrefix + 'col-';
+        this.HTMLHeadPrefix = this.HTMLPrefix + 'h-';
 
         this._tableElement = document.createElement('table');
         this._tableElement.id = this.HTMLIDPrefix + 'table';
@@ -677,7 +695,6 @@ class accTable{
     }
     get DOMElement() {return this._tableElement;}
     get data() {return this._data;}
-    get mode() {return this._tableType;}
 
     //HTML keywords
     get HTMLPrefix() {return 'acc-';}
@@ -770,24 +787,16 @@ class accTable{
 
     //--Construstion function--
     applyTableType() {
-        if(this._tableType[0] == 'planning' && this._tableType[1] == 'income'){
-            this._dataHierarchy = null;
-            this._dataItemFields = null;
+        if(this._data.type[0] == 'planning' && this._data.type[1] == 'income'){
             this._itemCellComposition = null;
             this._itemCellFieldMatch = null;
-        }else if(this._tableType[0] == 'planning' && this._tableType[1] == 'expenditure'){
-            this._dataHierarchy = null;
-            this._dataItemFields = null;
+        }else if(this._data.type[0] == 'planning' && this._data.type[1] == 'expenditure'){
             this._itemCellComposition = null;
             this._itemCellFieldMatch = null;
-        }else if(this._tableType[0] == 'closing' && this._tableType[1] == 'income'){
-            this._dataHierarchy = ['기구', '출처'];
-            this._dataItemFields = ['항목', '코드', '예산', '결산', '집행률', '비고'];
+        }else if(this._data.type[0] == 'closing' && this._data.type[1] == 'income'){
             this._itemCellComposition = [this.DRAGHANDLE, '항목', '코드', '예산', '결산', '집행률', '비고'];
             this._itemCellFieldMatch = [null, 0, 1, 2, 3, 4, 5];
-        }else if(this._tableType[0] == 'closing' && this._tableType[1] == 'expenditure'){
-            this._dataHierarchy = ['기구', '담당', '대항목'];
-            this._dataItemFields = ['항목', '출처', '코드', '예산', '결산', '집행률', '비고'];
+        }else if(this._data.type[0] == 'closing' && this._data.type[1] == 'expenditure'){
             this._itemCellComposition = ['출처', this.DRAGHANDLE, '항목', '코드', '예산', '결산', '집행률', '비고'];
             this._itemCellFieldMatch = [1, null, 0, 2, 3, 4, 5, 6];
         }
@@ -795,7 +804,7 @@ class accTable{
     createColgroup() {
         var colgroup = document.createElement('colgroup');
         for(var i = 0; i < this.data.hierarchy.length; i++) {
-            if(this._tableType[1]==this.EXPENDITURE && i > 0) {
+            if(this._data.type[1]==this.EXPENDITURE && i > 0) {
                 var col = document.createElement('col');
                 col.classList.add(this.HTMLColPrefix + this.DRAGHANDLE);
                 colgroup.append(col);
@@ -818,11 +827,11 @@ class accTable{
         var firstRowTh = document.createElement('th');
 
         var title = '';
-        if(this._tableType[1]==this.INCOME) title = '수입';
-        else if(this._tableType[1]==this.EXPENDITURE) title = '지출';
+        if(this._data.type[1]==this.INCOME) title = '수입';
+        else if(this._data.type[1]==this.EXPENDITURE) title = '지출';
 
         var addedColCount = 0;
-        if(this._tableType[1]==this.EXPENDITURE) addedColCount = 2;
+        if(this._data.type[1]==this.EXPENDITURE) addedColCount = 2;
 
         firstRowTh.textContent = title;
         firstRowTh.setAttribute('colspan', this.data.hierarchy.length + this._itemCellComposition.length + addedColCount);
@@ -834,7 +843,7 @@ class accTable{
             td.textContent = this.data.hierarchy[i];
             td.classList.add(this.HTMLHeadPrefix + this.data.hierarchy[i]);
             secondRow.append(td);
-            if(this._tableType[1]==this.EXPENDITURE && i > 0)
+            if(this._data.type[1]==this.EXPENDITURE && i > 0)
                 td.setAttribute('colspan', '2');
         }
         for(var i = 0; i < this._itemCellComposition.length; i++){//item rows
@@ -1166,7 +1175,7 @@ class accTable{
         cell.classList.add(this.HTMLClassClass, 
                            this.HTMLPrefix + this.data.hierarchy[classPath.length-1], 
                            this.HTMLPrefix + classPath);
-        if(this._tableType[1].localeCompare(this.EXPENDITURE) == 0 && 1<classPath.length) {
+        if(this._data.type[1].localeCompare(this.EXPENDITURE) == 0 && 1<classPath.length) {
             cell.setAttribute('contenteditable', true);
             cell.addEventListener('blur', this.snycClassName.bind(this)); 
         }
@@ -1183,7 +1192,7 @@ class accTable{
     }
     cntColInClass(classPath){
         var colPerHierarchyLevel = 1;
-        if(this._tableType[1].localeCompare(this.EXPENDITURE) == 0) colPerHierarchyLevel = 2;
+        if(this._data.type[1].localeCompare(this.EXPENDITURE) == 0) colPerHierarchyLevel = 2;
         return (this._data.hierarchy.length - classPath.length) * colPerHierarchyLevel + this._itemCellComposition.length;
     }
     createEmptyClassPlaceholderCell(row, classPath) {
@@ -1197,10 +1206,10 @@ class accTable{
         var row = this._tableElement.rows[rowPosition];
         var sumTitleCell = row.insertCell();
         var addedColCountInRest = 1;
-        if(this._tableType[1]==this.EXPENDITURE) addedColCountInRest = 4-classPath.length;
+        if(this._data.type[1]==this.EXPENDITURE) addedColCountInRest = 4-classPath.length;
         sumTitleCell.setAttribute('colspan', this.cntColInClass(classPath)-4);
 
-        if(this._tableType[1]==this.INCOME) {
+        if(this._data.type[1]==this.INCOME) {
             if(classPath.length == 1) {
                 sumTitleCell.textContent = "총계";
                 sumTitleCell.classList.add(this.SUM('high'));
@@ -1208,7 +1217,7 @@ class accTable{
                 sumTitleCell.textContent = "계";
                 sumTitleCell.classList.add(this.SUM('low'));
             }
-        }else if(this._tableType[1]==this.EXPENDITURE) {
+        }else if(this._data.type[1]==this.EXPENDITURE) {
             if(classPath.length == 1) {
                 sumTitleCell.textContent = "총계";
                 sumTitleCell.classList.add(this.SUM('high'));
@@ -1230,11 +1239,11 @@ class accTable{
         this.updatePartialSum(classPath);
     }
     createClassCell(row, classPath) {
-        if(classPath.length > 1 && this._tableType[1]==this.EXPENDITURE) {
+        if(classPath.length > 1 && this._data.type[1]==this.EXPENDITURE) {
             var dragCell = this.setFunctionCell(row.insertCell(), this.DRAGHANDLE, classPath).setAttribute('rowspan', Math.max(2, (this.countClassRows(classPath))));
         }
         var cell = this.setClassCell(row.insertCell(), classPath);
-        if(classPath.length > 1 && this._tableType[1]==this.EXPENDITURE) cell.classList.add('no-left-border');
+        if(classPath.length > 1 && this._data.type[1]==this.EXPENDITURE) cell.classList.add('no-left-border');
     }
     createCellsRecursion(rowPosition, classPath){
         var row = this._tableElement.rows[rowPosition];
@@ -1359,7 +1368,8 @@ var incomeDataSource1 =
                 ]
             ]
         ];
-var incomeTable1 = new accTable('income-table1', document.getElementById('ui-container'), ['closing','income'], incomeDataSource1);
+var incomeData1 = new accData(incomeDataSource1, ['closing','income']);
+var incomeTable1 = new accTable('income-table1', document.getElementById('ui-container'), incomeData1);
 
 var expenditureDataSource1 = 
         [
@@ -1391,7 +1401,8 @@ var expenditureDataSource1 =
                     ]]
             ]]
         ];
-var expenditureTable1 = new accTable('expenditure-table1', document.getElementById('ui-container'), ['closing','expenditure'], expenditureDataSource1);
+var expenditureData1 = new accData(expenditureDataSource1, ['closing','expenditure']);
+var expenditureTable1 = new accTable('expenditure-table1', document.getElementById('ui-container'), expenditureData1);
 
 
 //--Adding item--
