@@ -625,7 +625,6 @@ class dragHandler {
             this.updateMoveGraphic();
             var posToMoveIn = this.findPosToMoveIn();
             if(posToMoveIn) this.moveRowAndUpdate(posToMoveIn);
-            // this.endDrag();
         }
     }
     endDrag() {
@@ -938,15 +937,15 @@ class accTable{
         var selectedIdx = select.selectedIndex;
         var selected = null;
         switch(selectedIdx){
-            case 0://학생
+            case 1://학생
                 selected = '학생';
                 cell.classList.add(this.HTMLPrefix + '출처-' + selected);
                 break;
-            case 1://자치
+            case 2://자치
                 selected = '자치';
                 cell.classList.add(this.HTMLPrefix + '출처-' + selected);
                 break;
-            case 2://본회계
+            case 3://본회계
                 selected = '본회계';
                 cell.classList.add(this.HTMLPrefix + '출처-' + selected);
                 break;
@@ -1071,6 +1070,12 @@ class accTable{
 
             var select = document.createElement('select');
             select.setAttribute('name', itemCellType);
+
+            var optNull = document.createElement('option');
+            optNull.textContent = '';
+            optNull.setAttribute('value', '');
+            optNull.setAttribute('disabled', 'true');
+            select.append(optNull);
             var opt0 = document.createElement('option');
             opt0.textContent = '학생';
             opt0.setAttribute('value', '학생');
@@ -1087,6 +1092,7 @@ class accTable{
             if(fieldData=='학생') opt0.setAttribute('selected', true);
             else if(fieldData=='자치') opt1.setAttribute('selected', true);
             else if(fieldData=='본회계') opt2.setAttribute('selected', true);
+            else optNull.setAttribute('selected', true);
 
             cell.append(select);
             select.addEventListener('change', (e) => {
