@@ -318,7 +318,7 @@ class dragHandler {
         var chunk = [];
         var rowToPush = this.getFirstRowOfChunk(chunkPath);//initializing as first row of chunk
         chunk.push(rowToPush);
-        if(chunkPath.length < this._table.data.hierarchy.length + 1) {//class chunk
+        if(chunkPath.length < this._table.data.hierarchy.length + 1) {//only if class chunk
             var length = this._table.countClassRows(chunkPath);
             for(var i = 1; i < length; i++) {
                 rowToPush = rowToPush.nextElementSibling;
@@ -450,36 +450,84 @@ class dragHandler {
     }
 
     //move function
-    normalizePath(path) {
-        var pathCopy = copyArray(path);
-        var normalPathLen = this._objPath.length;
-        if (normalPathLen < pathCopy.length) pathCopy = pathCopy.slice(0, normalPathLen);
-        else if (normalPathLen - pathCopy.length == 1) pathCopy.push('empty');
-        return pathCopy;
+    getChunkInfo(givenRow) {//get chunck information in scope of objChunk level
+        var chunkPath = this._table.getRowPath(givenRow);
+        var chunkType = null;
+
+        if(chunkPath.length < this._objPath.length-1) {//chunkPath is more then one level higher
+            return {'type': 'invalid','path': null};
+        }else if(chunkPath.length == this._objPath.length-1) {//chunkPath is one level higher
+            if(givenRow.classList.contains(this._table.EMPTYROW)) 
+                chunkType = 'emptyClass';
+            else if(givenRow.classList.contains(this._table.HTMLSumRowClass)) 
+                chunkType = 'classSum';
+        }else{
+            chunkPath = chunkPath.slice(0, this._objPath.length);
+            chunkType = 'normal';
+        }
+
+        return {'type': chunkType, 'path': chunkPath};
     }
-    getChunkPos(chunkPath) {//only y position and height is valid
-        var chunkPathCopy = copyArray(chunkPath);
-        var pathLength = chunkPathCopy.length;
-
-        if(chunkPathCopy[chunkPathCopy.length-1]=='empty')//if row of empty class
-            chunkPathCopy.pop();//get position of higher level class
-
-        if(pathLength == this._table.data.hierarchy.length + 1) {//item chunk
-            return document.getElementById(this._table.HTMLRowPrefix + chunkPathCopy).getBoundingClientRect();
-        }else{//class chunk
-            var classCell = this._table.DOMElement.getElementsByClassName(this._table.HTMLPrefix + chunkPathCopy)[0];
-            return classCell.getBoundingClientRect();
+    getChunkPos(chunkInfo) {//only y position and height is valid
+        if(chunkInfo.type == 'emptyClass') {
+            return document.getElementById(this._table.HTMLRowPrefix + chunkInfo.path).getBoundingClientRect();
+        }else if(chunkInfo.type == 'classSum') {
+            return document.getElementById(this._table.HTMLSumRowPrefix + chunkInfo.path).getBoundingClientRect();
+        }else if(chunkInfo.type == 'normal') {
+            if(chunkInfo.path.length == this._table.data.hierarchy.length + 1) {//item chunk
+                return document.getElementById(this._table.HTMLItemPrefix + '항목-' + chunkInfo.path).getBoundingClientRect();
+            }else{//class chunk
+                var classCell = document.getElementById(this._table.HTMLIDPrefix + chunkInfo.path);
+                return classCell.getBoundingClientRect();
+            }
         }
     }
-    isMoveCondition(checkingPath) {
+    debugLine(y,color) {
+        var svgElem = document.getElementById('debugSvg');
+        if(!svgElem) {
+            svgElem = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svgElem.id = 'debugSvg';
+            document.body.prepend(svgElem);
+            svgElem.style.position = 'absolute';
+            svgElem.style.top = '0';
+            svgElem.style.left = '0';
+            svgElem.style.height = '1500px';
+            svgElem.style.width = '1300px';
+            // svgElem.setAttribute('height','1500px');
+            // svgElem.setAttribute('width','1300px');
+        }
+
+        var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1','100');
+        line.setAttribute('y1',y);
+        line.setAttribute('x2','1300');
+        line.setAttribute('y2',y);
+        line.style.stroke = color;
+
+        svgElem.append(line);
+    }
+    debugLines(objPos, checkingPos, floatingPos, scrollY) {
+        var exSvg = document.getElementById('debugSvg');
+        if(exSvg) exSvg.remove();
+
+        this.debugLine(scrollY+objPos.y,'red');
+        this.debugLine(scrollY+objPos.y+objPos.height,'red');
+        this.debugLine(scrollY+checkingPos.y, 'blue');
+        this.debugLine(scrollY+checkingPos.y+checkingPos.height, 'blue');
+        this.debugLine(scrollY+floatingPos.y, 'green');
+        this.debugLine(scrollY+floatingPos.y+floatingPos.height, 'green');
+    }
+    isMoveCondition(checkingChunkInfo) {//if check criteria satisfied to move objChunk in to position of checkingChunk
         var objPos = this._objChunk[0].getBoundingClientRect(),
             floatingPos = this._floatingChunk.getBoundingClientRect(),
-            checkingPos = this.getChunkPos(checkingPath);
+            checkingPos = this.getChunkPos(checkingChunkInfo);
+
+        // this.debugLines(objPos, checkingPos, floatingPos, window.scrollY);
 
         var posCriteria = checkingPos.y + checkingPos.height / 2;
-        if(objPos.y < checkingPos.y) { //getting closer from higer position
-            if(floatingPos.y + floatingPos.height / 2 > posCriteria) return true;
-        }else{ //getting closer from lower position
+        if(objPos.y < checkingPos.y) {//getting closer from higer position
+            if((floatingPos.y + floatingPos.height / 2) > posCriteria) return true;
+        }else{//getting closer from lower position
             if(floatingPos.y + floatingPos.height / 2 < posCriteria) return true;
         }
         // Math.abs(floatingPos.y - rowPos.y) < rowPos.height / 2 //old criteria
@@ -488,25 +536,46 @@ class dragHandler {
     findPosToMoveIn() {
         let objRowPos = this._objChunk[0].rowIndex - this._table.tHeadLength,
             rows = this._table.DOMElement.querySelectorAll('tbody tr'),
+            checkingDist = 2,//if checkingDist is 1 drag move might not work. in case of row hide must check again.
             checkingRange = {
-                "start": Math.max(0, objRowPos-1),
-                "end": Math.min(rows.length-1, objRowPos+this._objChunk.length+1)
-            };
+                "start": Math.max(0, objRowPos-checkingDist),
+                "end": Math.min(rows.length-1, objRowPos+this._objChunk.length+checkingDist)
+            },
+            slideDownChunkInfo = null;//chunk that shoul give its place ot objCunk
 
         for(let i = checkingRange.start; i<=checkingRange.end; i++) {
-            var checkingPath = this.normalizePath(this._table.getRowPath(rows[i]));
-            if (this._objPath.length != checkingPath.length) continue;
+            var checkingChunkInfo = this.getChunkInfo(rows[i]);
+            if(checkingChunkInfo.type == 'invalid') continue;
+            if(comparePath(checkingChunkInfo.path, this._objPath) == 0) continue;
+            if(this.isMoveCondition(checkingChunkInfo)) {
+                slideDownChunkInfo = checkingChunkInfo;
 
-            if(comparePath(this._objPath, checkingPath)!=0 && this.isMoveCondition(checkingPath))
-                return checkingPath;
+                var toPath = null;
+
+                if(slideDownChunkInfo.type == 'emptyClass') {
+                    toPath = slideDownChunkInfo.path.concat(0);
+                }else if(slideDownChunkInfo.type == 'classSum') {
+                    var parentPath = this._objPath.slice(0, this._objPath.length-1);
+                    if(comparePath(slideDownChunkInfo.path, parentPath)==0) continue;
+                    toPath =  slideDownChunkInfo.path.concat(this._table.data.countSubclasses(slideDownChunkInfo.path));
+                }else if(slideDownChunkInfo.type == 'normal') {
+                    toPath = slideDownChunkInfo.path;
+                }else{
+                    console.log(slideDownChunkInfo);
+                }
+
+                if(comparePath(toPath, this._objPath)==0) continue;  
+
+                return toPath;
+            }
         }
+
         return null;
     }
-    moveRowAndUpdate(normalizedToPath) {
+    moveRowAndUpdate(toPath) {
         var beforePosX = this._objChunk[0].getBoundingClientRect().x;
         var beforePosY = this._objChunk[0].getBoundingClientRect().y;
 
-        var toPath = normalizedToPath.map((x) => {return (x=='empty')?0:x;});
         this._table.data.moveSubdata(this._objPath, toPath);
         this._table.rereadTable();
         this._objPath = copyArray(toPath);
@@ -556,6 +625,7 @@ class dragHandler {
             this.updateMoveGraphic();
             var posToMoveIn = this.findPosToMoveIn();
             if(posToMoveIn) this.moveRowAndUpdate(posToMoveIn);
+            // this.endDrag();
         }
     }
     endDrag() {
@@ -1024,6 +1094,7 @@ class accTable{
             });
             break;
         case '항목'://항목
+            cell.id = this.HTMLItemPrefix + itemCellType + '-' + itemPath;
             cell.classList.add(this.HTMLPrefix + itemCellType);
             cell.setAttribute('contenteditable', true);
             cell.addEventListener('focus', this.selectOnFocus);

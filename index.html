@@ -213,6 +213,7 @@
   </head>
 
   <body>
+    <!-- <svg id="debugSvg" xmlns="http://www.w3.org/2000/svg" style="position: absolute;top: 0;left: 0"/> -->
     <div class="ui container">
       <h1>Table test</h1>
       <div id="ui-container">
@@ -328,8 +329,27 @@ copyArray(JSON.parse(~.getAttribute('path')))
 함수로
 
 this._tableType[1].localeCompare(this.EXPENDITURE) == 0
+or
 this._tableType[1] == this.EXPENDITURE
+두가지 차이와 선택
 
 clickedMoment 의존하는 방법을 prevClickedMoment, prev
+
+
+
+
+
+connectData(connectingData)
+connectItem(receivingItemPath, sendingItemPath, isUsingConnectedData=true,usingData=null)//considering changing path param to code 
+
+move 검사 시점(일정 거리 이동했을 때 기준)
+invalid rowcheck 일시 추가 check
+
+
+autoBackUP
+//방문하면 최근 수정 기준 백업
+//30개 수정 하면 백업
+//백업한지 10분 지났으며 10개 이상 수정하면 백업
+//백업한지 20분 지났으면 백업
   -->
 
