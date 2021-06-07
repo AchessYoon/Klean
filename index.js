@@ -61,7 +61,7 @@ class accData {
     fieldNum(fieldName) {//코드 관리를 위해 fieldNum은 변수가 아닌 string을 바로 인자로 호출
         return this._itemFields.indexOf(fieldName);
     }
-    getClassData(classPath) {
+    _getClassData(classPath) {
         if(classPath.length == 1){
         return this.content[classPath[0]][1];
         }else if(classPath.length == 2){
@@ -70,7 +70,7 @@ class accData {
         return this.content[classPath[0]][1][classPath[1]][1][classPath[2]][1];
         }
     }
-    getItem(itemPath) {
+    _getItem(itemPath) {
         if(itemPath.length == 3)
             return this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]];
         else if(itemPath.length == 4)
@@ -155,19 +155,19 @@ class accData {
                 this.content[classPath[0]][1][classPath[1]][1][classPath[2]][1].splice(classPath[3], 1);
         }
     }
-    moveItem(from, to) {
-        from = from*1;
-        to = to*1;//in case of string
-        var fromPath = this.getDataPath(from);
-        var toPath = this.getDataPath(to);
-        var pathLength = toPath.length;
-        if (from < to) toPath[pathLength-1]++;
+    // moveItem(from, to) {
+    //     from = from*1;
+    //     to = to*1;//in case of string
+    //     var fromPath = this.getDataPath(from);
+    //     var toPath = this.getDataPath(to);
+    //     var pathLength = toPath.length;
+    //     if (from < to) toPath[pathLength-1]++;
         
-        var item = this.getItem(fromPath);
-        this.insertItem(toPath, item);
-        if(to < from && fromPath[pathLength-2] == toPath[pathLength-2]) fromPath[pathLength-1]++;
-        this.removeItem(fromPath, true);
-    }
+    //     var item = this.getItem(fromPath);
+    //     this.insertItem(toPath, item);
+    //     if(to < from && fromPath[pathLength-2] == toPath[pathLength-2]) fromPath[pathLength-1]++;
+    //     this.removeItem(fromPath, true);
+    // }
     isSibling(originalPath1, originalPath2) {
         var path1 = copyArray(originalPath1);
         var path2 = copyArray(originalPath2);
@@ -188,9 +188,9 @@ class accData {
         
         var insertingData = null;
         if(pathLength == this.hierarchy.length+1)//item data
-            insertingData = this.getItem(fromPathCopy);
+            insertingData = this._getItem(fromPathCopy);
         else
-            insertingData = [this.getClassName(fromPathCopy), this.getClassData(fromPathCopy)];
+            insertingData = [this.getClassName(fromPathCopy), this._getClassData(fromPathCopy)];
         this.insertClass(toPathCopy, insertingData);
         if(fromPathCopy[pathLength-2] == toPathCopy[pathLength-2] && fromPathCopy[pathLength-1] > toPathCopy[pathLength-1]) fromPathCopy[pathLength-1]++;
         this.removeClass(fromPathCopy, true);
@@ -228,7 +228,7 @@ class accData {
         }
     }
     countSubclasses(classPath) {
-        return this.getClassData(classPath).length;
+        return this._getClassData(classPath).length;
     }
     getDataPathRecursion(idxInClass, dataPath) {
         if(dataPath.length == this._hierarchy.length) {
@@ -278,7 +278,7 @@ class accData {
 
     //--Sum--
     calcPartialSum(classPath, fieldName){
-        var classData = this.getClassData(classPath);
+        var classData = this._getClassData(classPath);
         var sum = 0;
 
         if(classPath.length==this._hierarchy.length) {//lowest level class, sum data of items
@@ -1068,7 +1068,7 @@ class accTable{
         var itemFieldIdx = this._itemCellFieldMatch[itemCellIdx];
         if(itemCellIdx==-1) return;
 
-        var fieldData = this._data.getItem(itemPath)[itemFieldIdx];
+        var fieldData = this._data.getItemField(itemPath, itemFieldIdx);
         cell.textContent = fieldData;
         cell.setAttribute('feild-idx', itemFieldIdx);
         switch(itemCellType){
