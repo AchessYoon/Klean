@@ -230,24 +230,24 @@ class accData {
     countSubclasses(classPath) {
         return this._getClassData(classPath).length;
     }
-    getDataPathRecursion(idxInClass, dataPath) {
-        if(dataPath.length == this._hierarchy.length) {
-            dataPath.push(idxInClass);
-            return dataPath;
-        }else{
-            var idx = idxInClass;
-            // var childDataPath = dataPath.slice();
-            // childDataPath.push(0);
-            var childDataPath = dataPath.concat([0]);
-            for(; idx >= this.countItemsInClass(childDataPath); childDataPath[childDataPath.length-1]++) {
-                idx -= this.countItemsInClass(childDataPath);
-            }
-            return this.getDataPathRecursion(idx, childDataPath);
-        }
-    }
-    getDataPath(idx) {
-        return this.getDataPathRecursion(idx, [0]);
-    }
+    // getDataPathRecursion(idxInClass, dataPath) {
+    //     if(dataPath.length == this._hierarchy.length) {
+    //         dataPath.push(idxInClass);
+    //         return dataPath;
+    //     }else{
+    //         var idx = idxInClass;
+    //         // var childDataPath = dataPath.slice();
+    //         // childDataPath.push(0);
+    //         var childDataPath = dataPath.concat([0]);
+    //         for(; idx >= this.countItemsInClass(childDataPath); childDataPath[childDataPath.length-1]++) {
+    //             idx -= this.countItemsInClass(childDataPath);
+    //         }
+    //         return this.getDataPathRecursion(idx, childDataPath);
+    //     }
+    // }
+    // getDataPath(idx) {
+    //     return this.getDataPathRecursion(idx, [0]);
+    // }
     // getDataIdx(dataPath) {
     //     var idx = 0;
     //     for(var i = 0; i < dataPath[0]; i++)
@@ -261,7 +261,16 @@ class accData {
     // }
 
     //--Item Code--
-    calculateItemCode(itemPath){
+    _traverseReassignItemCode(nodePath, func) {
+        var children = this._getClassData(nodePath);
+        if(children.length==0) return;
+        if(children[0].length==2) {//children are classes
+            children.forEach((child, childIndex)=>{this._traverseReassignItemCode(nodePath.concat(childIndex), func);})
+        }else{//children are items
+            children.forEach((child, childIndex)=>{func(nodePath.concat(childIndex));})
+        }
+    }
+    _calculateItemCode(itemPath){
         if(itemPath[1] > 25 || itemPath[2] > 25 || (itemPath.length==4 && itemPath[3] > 25)) alert('코드 배정 범위 초과');
         if(itemPath.length==3)
             return String.fromCharCode(65 + itemPath[1]) + String.fromCharCode(65 + itemPath[2]);
@@ -269,11 +278,12 @@ class accData {
             return String.fromCharCode(65 + itemPath[1]) + String.fromCharCode(65 + itemPath[2]) + (itemPath[3]+1);
     }
     reassignItemCodes(){
-        for(var i = 0; i < this.countItemsInClass([0]); i++) {
-            var itemPath = this.getDataPath(i);
-            var itemCode = this.calculateItemCode(itemPath);
+        var visitItemNodeAndSetCode = function(itemPath) {
+            var itemCode = this._calculateItemCode(itemPath);
             this.setItemField(itemPath, this.fieldNum('코드'), itemCode);
         }
+
+        this._traverseReassignItemCode([0], visitItemNodeAndSetCode.bind(this));
     }
 
     //--Sum--
