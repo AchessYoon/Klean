@@ -20,7 +20,7 @@ function comparePath(arr1, arr2){
 
 
 
-class accData {
+class AccData {
     constructor(givenData=[], accountType){
         this._content = givenData;
 
@@ -303,7 +303,7 @@ class accData {
     }
 }
 
-class dragHandler {
+class DragHandler {
     constructor(table){
         this._table = table;
 
@@ -672,7 +672,7 @@ class dragHandler {
     }
 }
 
-class accTable{
+class AccTable{
     constructor(tableID, parentElement, givenData){
         this._tabelID = tableID;
 
@@ -700,7 +700,7 @@ class accTable{
 
         parentElement.append(this._tableElement);
 
-        this._dragHanlder = new dragHandler(this);
+        this._dragHanlder = new DragHandler(this);
         this.readDataAndSet();
     }
     get DOMElement() {return this._tableElement;}
@@ -1378,8 +1378,8 @@ var incomeDataSource1 =
                 ]
             ]
         ];
-var incomeData1 = new accData(incomeDataSource1, ['closing','income']);
-var incomeTable1 = new accTable('income-table1', document.getElementById('ui-container'), incomeData1);
+var incomeData1 = new AccData(incomeDataSource1, ['closing','income']);
+var incomeTable1 = new AccTable('income-table1', document.getElementById('ui-container'), incomeData1);
 
 var expenditureDataSource1 = 
         [
@@ -1411,8 +1411,8 @@ var expenditureDataSource1 =
                     ]]
             ]]
         ];
-var expenditureData1 = new accData(expenditureDataSource1, ['closing','expenditure']);
-var expenditureTable1 = new accTable('expenditure-table1', document.getElementById('ui-container'), expenditureData1);
+var expenditureData1 = new AccData(expenditureDataSource1, ['closing','expenditure']);
+var expenditureTable1 = new AccTable('expenditure-table1', document.getElementById('ui-container'), expenditureData1);
 
 
 //--Adding item--
