@@ -109,9 +109,6 @@ class AccData{
         }
     }
 
-    _getFieldKey(fieldIdx) {//to be removed
-        return this._itemFields[fieldIdx];
-    }
     _isSibling(path1, path2) {
         if (path1.length != path2.length) return false;
         var len = path1.length;
@@ -217,70 +214,12 @@ class AccData{
                 var savdeData = parseInt(visitingNode[fieldName]);
                 if(savdeData) return savdeData;
                 else return 0;
-                // return parseInt(visitingNode[fieldName]);
             }
             else return childrenSum.reduce((accumulator, currentValue) => {return accumulator + currentValue;}, 0);
         }
 
         return this.traverseSubtree(this._getNode(classPath), calcSum.bind(this));
     }
-
-
-
-    //Old version fuctions
-
-    // get content() {}//X
-    // get hierarchy() {}//-
-    // get itemFields() {}//-
-    // get type() {}//-
-
-    // applyAccountType() {}//-
-    // fieldNum(fieldName) {}//X
-    // _getClassData(classPath) {}//X
-    // _getItem(itemPath) {}//X
-    // getClassName(classPath) {}//-
-    // setClassName(classPath, newName) {}//-
-    // getItemField(itemPath, feildIdx) {
-    //     return this.newGetItemField(itemPath, this._getFieldKey(feildIdx));
-    // }
-    // setItemField(itemPath, feildIdx, feildData) {
-    //     this.newSetItemField(itemPath, this._getFieldKey(feildIdx), feildData);
-    // }
-
-    // isSibling(originalPath1, originalPath2) {}//-
-
-    // insertItem(itemPath, item) {}//X
-    // insertNewItem(itemPath) {
-    //     this.insertNew(itemPath);
-    // }//insertNew~
-    // insertClass(classPath, insertingData) {}//X
-    // insertNewClass(classPath) {
-    //     this.insertNew(classPath);
-    // }//insertNew~
-
-    // removeItem(itemPath, isLeaveClass = false) {
-    //     this.remove(itemPath, isLeaveClass);
-    // }//remove~
-    // removeClass(classPath, isLeaveParent = false) {
-    //     this.remove(classPath, isLeaveParent);
-    // }//remove~
-
-    // moveSubdata(fromPath, toPath) {
-    //     this.move(fromPath, toPath);
-    // }//move~
-    
-    // countItemsInClass(classPath) {}//-
-    // countSubclasses(classPath) {
-    //     return this.countChildren(classPath);
-    // }//countChildren()
-
-    //--Item Code--
-    // _traverseReassignItemCode(nodePath, func) {}//X
-    // _calculateItemCode(itemPath){}//-
-    // reassignItemCodes(){}//-
-
-    //--Sum--
-    // calcPartialSum(classPath, fieldName){}//-
 }
 
 
@@ -311,8 +250,8 @@ class DragHandler {
         //keywords
         this.INVISABLE = 'invisable-cell';
         this.SHADOW = 'shadow';
-
     }
+    
     setEvent() {
         var dragHandles = this._table.DOMElement.getElementsByClassName(this._table.DRAGHANDLE);
         for(let i = 0; i < dragHandles.length; i++) {
@@ -718,18 +657,8 @@ class AccTable{
     }
 
     //--Helper functions--
-    // getClassCells(classLevel) {
-    //     return Array.from(this._tableElement.getElementsByClassName(this.HTMLPrefix + this.data.hierarchy[classLevel]));
-    // }
     get tableColgroup() {return this._tableColgroup;}
     get tHeadLength() {return this._tableElement.tHead.children.length;}
-    cellNum(cellFieldName) {//코드 관리를 위해 cellNum은 변수가 아닌 string을 바로 인자로 호출
-        return this._itemCellComposition.indexOf(cellFieldName);
-    }
-    getItemIdx(elem) {
-        var row  = elem.tagName == 'TR' ?  elem : elem.closest('tr');
-        return Number(row.getAttribute('item-index'));
-    }
     getRowPath(elem) {
         var row  = elem.tagName == 'TR' ?  elem : elem.closest('tr');
         return JSON.parse(row.getAttribute('path'));
@@ -1335,8 +1264,6 @@ class AccTable{
     }
 }
 
-
-
 var incomeDataSource1 = 
         [
             ['r1c2', 
@@ -1392,13 +1319,6 @@ var expenditureDataSource1 =
         ];
 var expenditureData1 = new AccData(expenditureDataSource1, ['closing','expenditure']);
 var expenditureTable1 = new AccTable('expenditure-table1', document.getElementById('ui-container'), expenditureData1);
-
-
-//--Adding item--
-function addNewItem() {
-    //to be developed: add new item in data
-}
-
 
 
 document.getElementById('button').addEventListener('click', () => {
