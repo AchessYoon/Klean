@@ -250,13 +250,13 @@ class AccData{
     // isSibling(originalPath1, originalPath2) {}//-
 
     // insertItem(itemPath, item) {}//X
-    insertNewItem(itemPath) {
-        this.insertNew(itemPath);
-    }//insertNew~
+    // insertNewItem(itemPath) {
+    //     this.insertNew(itemPath);
+    // }//insertNew~
     // insertClass(classPath, insertingData) {}//X
-    insertNewClass(classPath) {
-        this.insertNew(classPath);
-    }//insertNew~
+    // insertNewClass(classPath) {
+    //     this.insertNew(classPath);
+    // }//insertNew~
 
     removeItem(itemPath, isLeaveClass = false) {
         this.remove(itemPath, isLeaveClass);
@@ -1304,8 +1304,7 @@ class AccTable{
 
     //--Insert--
     insertNew(objPath) {
-        if(objPath.length == this._data.hierarchy.length+1) this._data.insertNewItem(objPath);
-        else this._data.insertNewClass(objPath);
+        this._data.insertNew(objPath);
         this.rereadTable();
     }
 
