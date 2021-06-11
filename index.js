@@ -18,31 +18,81 @@ function comparePath(arr1, arr2){
     return 0;
 }
 
+class AccNode{
+    constructor(){
+        this._parentNode = null;
+    }
+    get nodeType() {return 'null';}
+    get parent() {return this._parentNode;}
+    set parent(newParentNode) {this._parentNode = newParentNode;}//currently parent is only updated at AccClassNode.insert
+    get path() {
+        if(this._parentNode) {
+            var idxOfThis = this._parentNode.children.indexOf(this);
+            return this._parentNode.path.concat(idxOfThis);
+        }else{//root node
+            return [0];
+        }
+    }
+}
 
+class AccItemNode extends AccNode{
+    constructor(givenData={}){
+        super();
+        Object.assign(this, givenData);
+    }
+    get nodeType() {return 'item';}
+}
 
-class AccData {
-    constructor(givenData=[], accountType){
-        this._content = givenData;
+class AccClassNode extends AccNode{
+    constructor(givenName='', givenChildNodes=[]){
+        super();
+        this._childNodes = givenChildNodes;
+        this._name = givenName;
+    }
 
+    get nodeType() {return 'class';}
+    get name(){return this._name;}
+    set name(newName){this._name = newName;}
+    get children(){return this._childNodes;}
+
+    removeChild(childIdx) {
+        this._childNodes.splice(childIdx, 1);
+    }
+    insertChild(childIdx, childNode) {
+        this._childNodes.splice(childIdx, 0, childNode);
+        childNode.parent = this;
+    }
+}
+
+class AccData{
+    constructor(givenData=['', []], accountType){
         this._accountType = accountType;
         this._hierarchy = null;
         this._itemFields = null;
         this.applyAccountType();
-    }
-    get content() {
-        return this._content;
-    }
-    get hierarchy() {
-        return this._hierarchy;
-    }
-    get itemFields() {
-        return this._itemFields;
-    }
-    get type() {
-        return this._accountType;
+        this._root = this.parseReadIn(givenData[0]);
+        
     }
 
+    get hierarchy() {return this._hierarchy;}
+    get itemFields() {return this._itemFields;}
+    get type() {return this._accountType;}
+    get root() {return this._root;}//let public?
 
+    parseReadIn(data) {
+        var node = null;
+        if(data.length==2) {//class node
+            node = new AccClassNode(data[0]);
+            for(var i=0; i<data[1].length; i++) {
+                var childNode = this.parseReadIn(data[1][i]);
+                node.insertChild(node.children.length, childNode);
+            }
+        }else{//item node
+            node =  new AccItemNode();
+            for(var i=0; i<data.length; i++) node[this._itemFields[i]] = data[i];
+        }
+        return node;
+    }
     applyAccountType() {
         if(this._accountType[0] == 'planning' && this._accountType[1] == 'income'){
             this._hierarchy = null;
@@ -58,218 +108,93 @@ class AccData {
             this._itemFields = ['항목', '출처', '코드', '예산', '결산', '집행률', '비고'];
         }
     }
-    fieldNum(fieldName) {//코드 관리를 위해 fieldNum은 변수가 아닌 string을 바로 인자로 호출
-        return this._itemFields.indexOf(fieldName);
+
+    _getFieldKey(fieldIdx) {//to be removed
+        return this._itemFields[fieldIdx];
     }
-    _getClassData(classPath) {
-        if(classPath.length == 1){
-        return this.content[classPath[0]][1];
-        }else if(classPath.length == 2){
-        return this.content[classPath[0]][1][classPath[1]][1];
-        }else if(classPath.length == 3){
-        return this.content[classPath[0]][1][classPath[1]][1][classPath[2]][1];
-        }
-    }
-    _getItem(itemPath) {
-        if(itemPath.length == 3)
-            return this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]];
-        else if(itemPath.length == 4)
-            return this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]][1][itemPath[3]];
-        else console.log('error');
-    }
-    getItemField(itemPath, feildIdx) {
-        // console.log(itemPath);
-        // console.log(typeof this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]][feildIdx]);
-        if(itemPath.length == 3)
-            return this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]][feildIdx];
-        else if(itemPath.length == 4)
-            return this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]][1][itemPath[3]][feildIdx];
-        else console.log('error');
-    }
-    setItemField(itemPath, feildIdx, feildData) {
-        if(itemPath.length == 3)
-            this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]][feildIdx] = feildData;
-        else if(itemPath.length == 4)
-            this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]][1][itemPath[3]][feildIdx] = feildData;
-        else console.log('error');
-    }
-    insertItem(itemPath, item) {
-        if(itemPath.length == 3)
-            this.content[itemPath[0]][1][itemPath[1]][1].splice(itemPath[2], 0, item);
-        else if(itemPath.length == 4){
-            this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]][1].splice(itemPath[3], 0, item);
-        }
-        else console.log('error');
-    }
-    insertNewItem(itemPath) {
-        var newItem = Array.from(this._itemFields.length, () => null);
-        this.insertItem(itemPath, newItem);
-    }
-    removeItem(itemPath, isLeaveClass = false) {
-        if(itemPath.length == 3){
-            if(!isLeaveClass && this.countItemsInClass(itemPath.slice(0, 2)) == 1) 
-                this.content[itemPath[0]][1].splice(itemPath[1], 1);
-            else 
-                this.content[itemPath[0]][1][itemPath[1]][1].splice(itemPath[2], 1);
-        }else if(itemPath.length == 4){
-            if(!isLeaveClass && this.countItemsInClass(itemPath.slice(0, 3)) == 1) {
-                if(this.countItemsInClass(itemPath.slice(0, 2)) == 1)
-                    this.content[itemPath[0]][1].splice(itemPath[1], 1);
-                else
-                    this.content[itemPath[0]][1][itemPath[1]][1].splice(itemPath[2], 1);
-            }else 
-                this.content[itemPath[0]][1][itemPath[1]][1][itemPath[2]][1].splice(itemPath[3], 1);
-        }else{console.log('error');}
-    }
-    insertClass(classPath, insertingData) {
-        if(classPath.length == 2){
-        this.content[classPath[0]][1].splice(classPath[1], 0, insertingData);
-        }else if(classPath.length == 3){
-        this.content[classPath[0]][1][classPath[1]][1].splice(classPath[2], 0, insertingData);
-        }else if(classPath.length == 4){
-        this.content[classPath[0]][1][classPath[1]][1][classPath[2]][1].splice(classPath[3], 0, insertingData);
-        }
-    }
-    insertNewClass(classPath) {
-        var newClass = ['', []]
-        this.insertClass(classPath, newClass);
-    }
-    removeClass(classPath, isLeaveParent = false) {
-        if(classPath.length == 2){
-            if(!isLeaveParent && this.content[classPath[0]][1].length == 1) 
-                return false;//removeClass(classPath.slice(0,1));//can't remove root
-            else {
-                this.content[classPath[0]][1].splice(classPath[1], 1);
-            }
-        }else if(classPath.length == 3){
-            if(!isLeaveParent && this.content[classPath[0]][1][classPath[1]][1].length == 1) {
-                this.removeClass(classPath.slice(0,2));
-            }
-            else {
-                this.content[classPath[0]][1][classPath[1]][1].splice(classPath[2], 1);
-            }
-        }else if(classPath.length == 4){
-            if(!isLeaveParent && this.content[classPath[0]][1][classPath[1]][1][classPath[2]][1].length == 1) 
-                this.removeClass(classPath.slice(0,3));
-            else 
-                this.content[classPath[0]][1][classPath[1]][1][classPath[2]][1].splice(classPath[3], 1);
-        }
-    }
-    // moveItem(from, to) {
-    //     from = from*1;
-    //     to = to*1;//in case of string
-    //     var fromPath = this.getDataPath(from);
-    //     var toPath = this.getDataPath(to);
-    //     var pathLength = toPath.length;
-    //     if (from < to) toPath[pathLength-1]++;
-        
-    //     var item = this.getItem(fromPath);
-    //     this.insertItem(toPath, item);
-    //     if(to < from && fromPath[pathLength-2] == toPath[pathLength-2]) fromPath[pathLength-1]++;
-    //     this.removeItem(fromPath, true);
-    // }
-    isSibling(originalPath1, originalPath2) {
-        var path1 = copyArray(originalPath1);
-        var path2 = copyArray(originalPath2);
+    _isSibling(path1, path2) {
         if (path1.length != path2.length) return false;
         var len = path1.length;
         if (comparePath(path1.slice(0, len-1), path2.slice(0, len-1))==0) return true;
         return false;
     }
-    moveSubdata(fromPath, toPath) {
-        // console.log(fromPath, toPath);
-        if (fromPath.length != toPath.length) return;
 
+
+    _getNode(path) {
+        var node = this._root;
+        for(var i=1; i<path.length; i++) node = node.children[path[i]];
+        return node;
+    }
+
+    getClassName(classPath) {
+        return this._getNode(classPath).name;
+    }
+    setClassName(classPath, newName) {
+        this._getNode(classPath).name = newName;
+    }
+
+    newGetItemField(itemPath, feildKey) {
+        return this._getNode(itemPath)[feildKey];
+    }
+    newSetItemField(itemPath, feildKey, feildData) {
+        this._getNode(itemPath)[feildKey] = feildData;
+    }
+
+    _insert(path, node) {
+        this._getNode(path.slice(0,path.length-1)).insertChild(path[path.length-1], node);
+    }
+    insertNew(path) {
+        if(path.length <= this._hierarchy.length) this._insert(path, new AccClassNode());
+        else this._insert(path, new AccItemNode());
+    }
+
+    remove(path, isLeavingEmptyClass = true) {
+        console.log(path);
+        this._getNode(path.slice(0,path.length-1)).removeChild(path[path.length-1]);
+    }
+
+    move(fromPath, toPath) {
         var fromPathCopy = copyArray(fromPath);
         var toPathCopy = copyArray(toPath);
         var pathLength = toPathCopy.length;
-        if (this.isSibling(fromPathCopy, toPathCopy) && fromPathCopy[pathLength-1] < toPathCopy[pathLength-1])
+        if (this._isSibling(fromPathCopy, toPathCopy) && fromPathCopy[pathLength-1] < toPathCopy[pathLength-1])
             toPathCopy[pathLength-1]++;
         
-        var insertingData = null;
-        if(pathLength == this.hierarchy.length+1)//item data
-            insertingData = this._getItem(fromPathCopy);
-        else
-            insertingData = [this.getClassName(fromPathCopy), this._getClassData(fromPathCopy)];
-        this.insertClass(toPathCopy, insertingData);
-        if(fromPathCopy[pathLength-2] == toPathCopy[pathLength-2] && fromPathCopy[pathLength-1] > toPathCopy[pathLength-1]) fromPathCopy[pathLength-1]++;
-        this.removeClass(fromPathCopy, true);
+        
+        var movingNode = this._getNode(fromPath);
+        this._insert(toPath, movingNode);
+
+        if(fromPathCopy[pathLength-2] == toPathCopy[pathLength-2] && fromPathCopy[pathLength-1] > toPathCopy[pathLength-1]) 
+            fromPathCopy[pathLength-1]++;
+        this.remove(fromPath);
     }
-    getClassName(classPath) {
-        if (classPath.length == 1) {
-        return this.content[classPath[0]][0];
-        } else if(classPath.length == 2) {
-        return this.content[classPath[0]][1][classPath[1]][0];
-        } else if(classPath.length == 3) {
-        return this.content[classPath[0]][1][classPath[1]][1][classPath[2]][0];
-        }
+
+    traverseSubtree(node, visitFunc) {
+        var mappedChildren = null;
+        if(node.nodeType.localeCompare('class') == 0) mappedChildren = node.children.map((child)=>{return this.traverseSubtree(child, visitFunc);});
+        return visitFunc(node, mappedChildren);
     }
-    setClassName(classPath, newName) {
-        if (classPath.length == 1) {
-            this.content[classPath[0]][0] = newName;
-        } else if(classPath.length == 2) {
-            this.content[classPath[0]][1][classPath[1]][0] = newName;
-        } else if(classPath.length == 3) {
-            this.content[classPath[0]][1][classPath[1]][1][classPath[2]][0] = newName;
-        }
+    traverseTree(visitFunc) {
+        this.traverseSubtree(this._root, visitFunc);
     }
+
     countItemsInClass(classPath) {
         if(classPath.length == this._hierarchy.length){//lowest class
-            return this.countSubclasses(classPath);
+            return this._getNode(classPath).children.length;
         } else {//sum item-count in subclasses
             var itemCount = 0;
-            for(let i = 0; i < this.countSubclasses(classPath); i++){
-                // var subClassPath = classPath.slice();
-                // subClassPath.push(i);
+            for(let i = 0; i < this._getNode(classPath).children.length; i++) {
                 var subClassPath = classPath.concat([i]);
                 itemCount += this.countItemsInClass(subClassPath);
             }
             return itemCount;
         }
     }
-    countSubclasses(classPath) {
-        return this._getClassData(classPath).length;
+    countChildren(classPath) {
+        return this._getNode(classPath).children.length;
     }
-    // getDataPathRecursion(idxInClass, dataPath) {
-    //     if(dataPath.length == this._hierarchy.length) {
-    //         dataPath.push(idxInClass);
-    //         return dataPath;
-    //     }else{
-    //         var idx = idxInClass;
-    //         // var childDataPath = dataPath.slice();
-    //         // childDataPath.push(0);
-    //         var childDataPath = dataPath.concat([0]);
-    //         for(; idx >= this.countItemsInClass(childDataPath); childDataPath[childDataPath.length-1]++) {
-    //             idx -= this.countItemsInClass(childDataPath);
-    //         }
-    //         return this.getDataPathRecursion(idx, childDataPath);
-    //     }
-    // }
-    // getDataPath(idx) {
-    //     return this.getDataPathRecursion(idx, [0]);
-    // }
-    // getDataIdx(dataPath) {
-    //     var idx = 0;
-    //     for(var i = 0; i < dataPath[0]; i++)
-    //         idx += this.countItemsInClass(dataPath.slice(0,1));
-    //     if(dataPath.length >= 2)
-    //         for(var i = 0; i < dataPath[1]; i++)
-    //             idx += this.countItemsInClass(dataPath.slice(0,2));
-    //     if(dataPath.length == 3)
-    //         idx += dataPath[2];
-    //     return ++idx;
-    // }
 
     //--Item Code--
-    _traverseReassignItemCode(nodePath, func) {
-        var children = this._getClassData(nodePath);
-        if(children.length==0) return;
-        if(children[0].length==2) {//children are classes
-            children.forEach((child, childIndex)=>{this._traverseReassignItemCode(nodePath.concat(childIndex), func);})
-        }else{//children are items
-            children.forEach((child, childIndex)=>{func(nodePath.concat(childIndex));})
-        }
-    }
     _calculateItemCode(itemPath){
         if(itemPath[1] > 25 || itemPath[2] > 25 || (itemPath.length==4 && itemPath[3] > 25)) alert('코드 배정 범위 초과');
         if(itemPath.length==3)
@@ -278,30 +203,86 @@ class AccData {
             return String.fromCharCode(65 + itemPath[1]) + String.fromCharCode(65 + itemPath[2]) + (itemPath[3]+1);
     }
     reassignItemCodes(){
-        var visitItemNodeAndSetCode = function(itemPath) {
-            var itemCode = this._calculateItemCode(itemPath);
-            this.setItemField(itemPath, this.fieldNum('코드'), itemCode);
+        var setItemCode = function(node) {
+            if(node.nodeType.localeCompare('item') == 0) node['코드'] = this._calculateItemCode(node.path);
         }
 
-        this._traverseReassignItemCode([0], visitItemNodeAndSetCode.bind(this));
+        this.traverseTree(setItemCode.bind(this));
     }
 
     //--Sum--
     calcPartialSum(classPath, fieldName){
-        var classData = this._getClassData(classPath);
-        var sum = 0;
-
-        if(classPath.length==this._hierarchy.length) {//lowest level class, sum data of items
-            if(classData.length==0) return 0;
-            for(var i=0; i<classData.length; i++) 
-                sum += parseInt(this.getItemField(classPath.concat(i), this.fieldNum(fieldName)));//using parseInt becase the func returns string for unknown reason
-        }else{//sum subclasses
-            for(var i=0; i<classData.length; i++) 
-                sum += this.calcPartialSum(classPath.concat(i), fieldName);
+        var calcSum = function(visitingNode, childrenSum) {
+            if(visitingNode.nodeType.localeCompare('item') == 0) {
+                var savdeData = parseInt(visitingNode[fieldName]);
+                if(savdeData) return savdeData;
+                else return 0;
+                // return parseInt(visitingNode[fieldName]);
+            }
+            else return childrenSum.reduce((accumulator, currentValue) => {return accumulator + currentValue;}, 0);
         }
-        return sum;
+
+        return this.traverseSubtree(this._getNode(classPath), calcSum.bind(this));
     }
+
+
+
+    //Old version fuctions
+
+    // get content() {}//X
+    // get hierarchy() {}//-
+    // get itemFields() {}//-
+    // get type() {}//-
+
+    // applyAccountType() {}//-
+    // fieldNum(fieldName) {}//X
+    // _getClassData(classPath) {}//X
+    // _getItem(itemPath) {}//X
+    // getClassName(classPath) {}//-
+    // setClassName(classPath, newName) {}//-
+    getItemField(itemPath, feildIdx) {
+        return this.newGetItemField(itemPath, this._getFieldKey(feildIdx));
+    }
+    setItemField(itemPath, feildIdx, feildData) {
+        this.newSetItemField(itemPath, this._getFieldKey(feildIdx), feildData);
+    }
+
+    // isSibling(originalPath1, originalPath2) {}//-
+
+    // insertItem(itemPath, item) {}//X
+    insertNewItem(itemPath) {
+        this.insertNew(itemPath);
+    }//insertNew~
+    // insertClass(classPath, insertingData) {}//X
+    insertNewClass(classPath) {
+        this.insertNew(classPath);
+    }//insertNew~
+
+    removeItem(itemPath, isLeaveClass = false) {
+        this.remove(itemPath, isLeaveClass);
+    }//remove~
+    removeClass(classPath, isLeaveParent = false) {
+        this.remove(classPath, isLeaveParent);
+    }//remove~
+
+    moveSubdata(fromPath, toPath) {
+        this.move(fromPath, toPath);
+    }//move~
+    
+    // countItemsInClass(classPath) {}//-
+    countSubclasses(classPath) {
+        return this.countChildren(classPath);
+    }//countChildren()
+
+    //--Item Code--
+    // _traverseReassignItemCode(nodePath, func) {}//X
+    // _calculateItemCode(itemPath){}//-
+    // reassignItemCodes(){}//-
+
+    //--Sum--
+    // calcPartialSum(classPath, fieldName){}//-
 }
+
 
 class DragHandler {
     constructor(table){
