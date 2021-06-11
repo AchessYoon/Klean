@@ -136,7 +136,7 @@ class AccData{
     getItemField(itemPath, feildKey) {
         return this._getNode(itemPath)[feildKey];
     }
-    newSetItemField(itemPath, feildKey, feildData) {
+    setItemField(itemPath, feildKey, feildData) {
         this._getNode(itemPath)[feildKey] = feildData;
     }
 
@@ -243,9 +243,9 @@ class AccData{
     // getItemField(itemPath, feildIdx) {
     //     return this.newGetItemField(itemPath, this._getFieldKey(feildIdx));
     // }
-    setItemField(itemPath, feildIdx, feildData) {
-        this.newSetItemField(itemPath, this._getFieldKey(feildIdx), feildData);
-    }
+    // setItemField(itemPath, feildIdx, feildData) {
+    //     this.newSetItemField(itemPath, this._getFieldKey(feildIdx), feildData);
+    // }
 
     // isSibling(originalPath1, originalPath2) {}//-
 
@@ -736,8 +736,8 @@ class AccTable{
     }
     snycCellToData(cell, feildData = cell.textContent) {//snyc from cell to data
         var itemPath = this.getRowPath(cell);
-        var feildIdx = cell.getAttribute('feild-idx');
-        this._data.setItemField(itemPath, feildIdx, feildData);
+        var feildName = cell.getAttribute('feild-name');
+        this._data.setItemField(itemPath, feildName, feildData);
     }
     snycClassName(event) {//classCell, className = classCell.textContent) {//snyc from table to data
         var classCell = event.target; 
@@ -1062,6 +1062,7 @@ class AccTable{
         var fieldData = this._data.getItemField(itemPath, itemCellType);
         cell.textContent = fieldData;
         cell.setAttribute('feild-idx', itemFieldIdx);
+        cell.setAttribute('feild-name', itemCellType);
         switch(itemCellType){
         case '출처'://출처
             cell.textContent = '';
