@@ -270,9 +270,9 @@ class AccData{
     // }//move~
     
     // countItemsInClass(classPath) {}//-
-    countSubclasses(classPath) {
-        return this.countChildren(classPath);
-    }//countChildren()
+    // countSubclasses(classPath) {
+    //     return this.countChildren(classPath);
+    // }//countChildren()
 
     //--Item Code--
     // _traverseReassignItemCode(nodePath, func) {}//X
@@ -571,7 +571,7 @@ class DragHandler {
                 }else if(slideDownChunkInfo.type == 'classSum') {
                     var parentPath = this._objPath.slice(0, this._objPath.length-1);
                     if(comparePath(slideDownChunkInfo.path, parentPath)==0) continue;
-                    toPath =  slideDownChunkInfo.path.concat(this._table.data.countSubclasses(slideDownChunkInfo.path));
+                    toPath =  slideDownChunkInfo.path.concat(this._table.data.countChildren(slideDownChunkInfo.path));
                 }else if(slideDownChunkInfo.type == 'normal') {
                     toPath = slideDownChunkInfo.path;
                 }else{
@@ -747,12 +747,12 @@ class AccTable{
     }
     countClassRows(classPath) { //count including empty class row
         if(classPath.length == this._data._hierarchy.length){//lowest class
-            return Math.max(1, this._data.countSubclasses(classPath))+1;//least 1 in empty case, add 1 for sumRow
+            return Math.max(1, this._data.countChildren(classPath))+1;//least 1 in empty case, add 1 for sumRow
         } else {//sum row count in subclasses
             var rowCount = 0;
-            if(this._data.countSubclasses(classPath) == 0) rowCount = 1;
+            if(this._data.countChildren(classPath) == 0) rowCount = 1;
             else{
-                for(let i = 0; i < this._data.countSubclasses(classPath); i++){
+                for(let i = 0; i < this._data.countChildren(classPath); i++){
                     var subClassPath = classPath.concat([i]);
                     rowCount += this.countClassRows(subClassPath);
                 }
@@ -897,7 +897,7 @@ class AccTable{
                 sum = this._data.calcPartialSum(classPath, field);
             else{
                 sum = 0;
-                for(var j=0; j<this._data.countSubclasses(classPath); j++){
+                for(var j=0; j<this._data.countChildren(classPath); j++){
                     var childPath = classPath.concat(j);
                     var childClassSumRow = document.getElementById(this.HTMLSumRowPrefix + childPath);
                     var childClassSumCell = childClassSumRow.getElementsByClassName(this.HTMLSumCellPrefix + field)[0];
@@ -1240,7 +1240,7 @@ class AccTable{
         this.createClassCell(row, classPath);
 
         var childPosition = rowPosition;
-        var childrenCount = this._data.countSubclasses(classPath);
+        var childrenCount = this._data.countChildren(classPath);
         var areChildrenClass = classPath.length < this._data.hierarchy.length;
 
         if(childrenCount == 0) {
@@ -1269,16 +1269,16 @@ class AccTable{
     }
     createRowsRecursion(classPath) {
         var accTbody = this._tableElement.tBodies[0];
-        if(this._data.countSubclasses(classPath) == 0){//class doesn't have subclass, empty
+        if(this._data.countChildren(classPath) == 0){//class doesn't have subclass, empty
                 var row = accTbody.insertRow();
                 row.id = this.HTMLRowPrefix + classPath;
                 row.classList.add(this.EMPTYROW, this.EMPTYROW + '-' + classPath);
                 row.setAttribute('path', JSON.stringify(classPath));
         }else if(classPath.length < this._data._hierarchy.length){//not lowest level class//recurse subclass
-            for(let i = 0; i < this._data.countSubclasses(classPath); i++)
+            for(let i = 0; i < this._data.countChildren(classPath); i++)
                 this.createRowsRecursion(classPath.concat([i]));
         }else{//lowest level class
-            for(var i = 0; i < this._data.countSubclasses(classPath); i++) {
+            for(var i = 0; i < this._data.countChildren(classPath); i++) {
                 var itemPath = classPath.concat([i]);
                 var row = accTbody.insertRow();
                 row.id = this.HTMLRowPrefix + itemPath;
