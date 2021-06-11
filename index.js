@@ -265,9 +265,9 @@ class AccData{
     //     this.remove(classPath, isLeaveParent);
     // }//remove~
 
-    moveSubdata(fromPath, toPath) {
-        this.move(fromPath, toPath);
-    }//move~
+    // moveSubdata(fromPath, toPath) {
+    //     this.move(fromPath, toPath);
+    // }//move~
     
     // countItemsInClass(classPath) {}//-
     countSubclasses(classPath) {
@@ -590,7 +590,7 @@ class DragHandler {
         var beforePosX = this._objChunk[0].getBoundingClientRect().x;
         var beforePosY = this._objChunk[0].getBoundingClientRect().y;
 
-        this._table.data.moveSubdata(this._objPath, toPath);
+        this._table.data.move(this._objPath, toPath);
         this._table.rereadTable();
         this._objPath = copyArray(toPath);
         this._objChunk = this.getChunk(this._objPath);
