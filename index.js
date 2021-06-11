@@ -258,12 +258,12 @@ class AccData{
     //     this.insertNew(classPath);
     // }//insertNew~
 
-    removeItem(itemPath, isLeaveClass = false) {
-        this.remove(itemPath, isLeaveClass);
-    }//remove~
-    removeClass(classPath, isLeaveParent = false) {
-        this.remove(classPath, isLeaveParent);
-    }//remove~
+    // removeItem(itemPath, isLeaveClass = false) {
+    //     this.remove(itemPath, isLeaveClass);
+    // }//remove~
+    // removeClass(classPath, isLeaveParent = false) {
+    //     this.remove(classPath, isLeaveParent);
+    // }//remove~
 
     moveSubdata(fromPath, toPath) {
         this.move(fromPath, toPath);
@@ -610,7 +610,7 @@ class DragHandler {
 
     //remove function
     removeObjChunk(){
-        this._table.data.removeClass(this._objPath, true);
+        this._table.data.remove(this._objPath);
         this._table.rereadTable();
         this.endDrag();
         document.removeEventListener('mouseup', this._boundRemoveObjChunk);
