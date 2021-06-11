@@ -1056,12 +1056,10 @@ class AccTable{
     //--Generateing Table--
     setItemCell(cell, itemPath, itemCellType){
         var itemCellIdx = this._itemCellComposition.indexOf(itemCellType);
-        var itemFieldIdx = this._itemCellFieldMatch[itemCellIdx];
         if(itemCellIdx==-1) return;
 
         var fieldData = this._data.getItemField(itemPath, itemCellType);
         cell.textContent = fieldData;
-        cell.setAttribute('feild-idx', itemFieldIdx);
         cell.setAttribute('feild-name', itemCellType);
         switch(itemCellType){
         case '출처'://출처
