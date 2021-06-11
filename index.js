@@ -133,7 +133,7 @@ class AccData{
         this._getNode(classPath).name = newName;
     }
 
-    newGetItemField(itemPath, feildKey) {
+    getItemField(itemPath, feildKey) {
         return this._getNode(itemPath)[feildKey];
     }
     newSetItemField(itemPath, feildKey, feildData) {
@@ -240,9 +240,9 @@ class AccData{
     // _getItem(itemPath) {}//X
     // getClassName(classPath) {}//-
     // setClassName(classPath, newName) {}//-
-    getItemField(itemPath, feildIdx) {
-        return this.newGetItemField(itemPath, this._getFieldKey(feildIdx));
-    }
+    // getItemField(itemPath, feildIdx) {
+    //     return this.newGetItemField(itemPath, this._getFieldKey(feildIdx));
+    // }
     setItemField(itemPath, feildIdx, feildData) {
         this.newSetItemField(itemPath, this._getFieldKey(feildIdx), feildData);
     }
@@ -1059,7 +1059,7 @@ class AccTable{
         var itemFieldIdx = this._itemCellFieldMatch[itemCellIdx];
         if(itemCellIdx==-1) return;
 
-        var fieldData = this._data.getItemField(itemPath, itemFieldIdx);
+        var fieldData = this._data.getItemField(itemPath, itemCellType);
         cell.textContent = fieldData;
         cell.setAttribute('feild-idx', itemFieldIdx);
         switch(itemCellType){
