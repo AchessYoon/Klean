@@ -56,9 +56,12 @@ class AccClassNode extends AccNode{
     get children(){return this._childNodes;}
 
     removeChild(childIdx) {
+        var childNode = this._childNodes[childIdx];
         this._childNodes.splice(childIdx, 1);
+        childNode.parent = null;
     }
     insertChild(childIdx, childNode) {
+        if(childNode.parent) throw 'Only free node can be inserted';
         this._childNodes.splice(childIdx, 0, childNode);
         childNode.parent = this;
     }
