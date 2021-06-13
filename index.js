@@ -146,24 +146,16 @@ class AccData{
     }
 
     remove(path, isLeavingEmptyClass = true) {
-        console.log(path);
         this._getNode(path.slice(0,path.length-1)).removeChild(path[path.length-1]);
     }
 
     move(fromPath, toPath) {
         var fromPathCopy = copyArray(fromPath);
         var toPathCopy = copyArray(toPath);
-        var pathLength = toPathCopy.length;
-        if (this._isSibling(fromPathCopy, toPathCopy) && fromPathCopy[pathLength-1] < toPathCopy[pathLength-1])
-            toPathCopy[pathLength-1]++;
+        var movingNode = this._getNode(fromPathCopy);
         
-        
-        var movingNode = this._getNode(fromPath);
-        this._insert(toPath, movingNode);
-
-        if(fromPathCopy[pathLength-2] == toPathCopy[pathLength-2] && fromPathCopy[pathLength-1] > toPathCopy[pathLength-1]) 
-            fromPathCopy[pathLength-1]++;
-        this.remove(fromPath);
+        this.remove(fromPathCopy);
+        this._insert(toPathCopy, movingNode);
     }
 
     traverseSubtree(node, visitFunc) {
@@ -251,7 +243,7 @@ class DragHandler {
         this.INVISABLE = 'invisable-cell';
         this.SHADOW = 'shadow';
     }
-    
+
     setEvent() {
         var dragHandles = this._table.DOMElement.getElementsByClassName(this._table.DRAGHANDLE);
         for(let i = 0; i < dragHandles.length; i++) {
