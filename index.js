@@ -54,6 +54,7 @@ class AccClassNode extends AccNode{
     get name(){return this._name;}
     set name(newName){this._name = newName;}
     get children(){return this._childNodes;}
+    get maximumChildrenCnt(){return 99;}
 
     removeChild(childIdx) {
         var childNode = this._childNodes[childIdx];
@@ -62,6 +63,7 @@ class AccClassNode extends AccNode{
     }
     insertChild(childIdx, childNode) {
         if(childNode.parent) throw 'Only free node can be inserted';
+        if(this._childNodes.length==this.maximumChildrenCnt) throw 'Maximum children count excess';
         this._childNodes.splice(childIdx, 0, childNode);
         childNode.parent = this;
     }
@@ -204,13 +206,13 @@ class AccData{
 
     //--Sum--
     calcPartialSum(classPath, fieldName){
-        var calcSum = function(visitingNode, childrenSum) {
+        var calcSum = function(visitingNode, childSums) {
             if(visitingNode.nodeType.localeCompare('item') == 0) {
                 var savdeData = parseInt(visitingNode[fieldName]);
                 if(savdeData) return savdeData;
                 else return 0;
             }
-            else return childrenSum.reduce((accumulator, currentValue) => {return accumulator + currentValue;}, 0);
+            else return childSums.reduce((accumulator, currentValue) => {return accumulator + currentValue;}, 0);
         }
 
         return this.traverseSubtree(this._getNode(classPath), calcSum.bind(this));
