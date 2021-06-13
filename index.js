@@ -1089,8 +1089,7 @@ class AccTable{
         cell.setAttribute('rowspan', Math.max(2, this.countClassRows(classPath)));
         cell.setAttribute('path', JSON.stringify(classPath));
         cell.classList.add(this.HTMLClassClass, 
-                           this.HTMLPrefix + this.data.hierarchy[classPath.length-1], 
-                           this.HTMLPrefix + classPath);
+                           this.HTMLPrefix + this.data.hierarchy[classPath.length-1]);
         if(this._data.type[1].localeCompare(this.EXPENDITURE) == 0 && 1<classPath.length) {
             cell.setAttribute('contenteditable', true);
             cell.addEventListener('blur', this.snycClassName.bind(this)); 
@@ -1198,7 +1197,7 @@ class AccTable{
         if(this._data.countChildren(classPath) == 0){//class doesn't have subclass, empty
                 var row = accTbody.insertRow();
                 row.id = this.HTMLRowPrefix + classPath;
-                row.classList.add(this.EMPTYROW, this.EMPTYROW + '-' + classPath);
+                row.classList.add(this.EMPTYROW);
                 row.setAttribute('path', JSON.stringify(classPath));
         }else if(classPath.length < this._data._hierarchy.length){//not lowest level class//recurse subclass
             for(let i = 0; i < this._data.countChildren(classPath); i++)
