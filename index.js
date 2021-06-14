@@ -134,14 +134,6 @@ class AccData{
         }
     }
 
-    _isSibling(path1, path2) {
-        if (path1.length != path2.length) return false;
-        var len = path1.length;
-        if (path1.slice(0, len-1).value == path2.slice(0, len-1).value) return true;
-        return false;
-    }
-
-
     _getNode(path) {
         var node = this._root;
         for(var i=1; i<path.length; i++) node = node.children[path[i]];
