@@ -50,6 +50,9 @@ class AccNode{
             return [0];
         }
     }
+
+    isItem() {return this.nodeType.localeCompare('item') == 0;}
+    isClass() {return this.nodeType.localeCompare('class') == 0;}
 }
 
 class AccItemNode extends AccNode{
@@ -182,7 +185,7 @@ class AccData{
 
     traverseSubtree(node, visitFunc) {
         var mappedChildren = null;
-        if(node.nodeType.localeCompare('class') == 0) mappedChildren = node.children.map((child)=>{return this.traverseSubtree(child, visitFunc);});
+        if(node.isClass()) mappedChildren = node.children.map((child)=>{return this.traverseSubtree(child, visitFunc);});
         return visitFunc(node, mappedChildren);
     }
     traverseTree(visitFunc) {
@@ -215,7 +218,7 @@ class AccData{
     }
     reassignItemCodes(){
         var setItemCode = function(node) {
-            if(node.nodeType.localeCompare('item') == 0) node['코드'] = this._calculateItemCode(node.path);
+            if(node.isItem()) node['코드'] = this._calculateItemCode(node.path);
         }
 
         this.traverseTree(setItemCode.bind(this));
@@ -224,7 +227,7 @@ class AccData{
     //--Sum--
     calcPartialSum(classPath, fieldName){
         var calcSum = function(visitingNode, childSums) {
-            if(visitingNode.nodeType.localeCompare('item') == 0) {
+            if(visitingNode.isItem()) {
                 var savdeData = parseInt(visitingNode[fieldName]);
                 if(savdeData) return savdeData;
                 else return 0;
