@@ -1,13 +1,5 @@
 'use strict';
 //window.onload = function() {}
-
-function copyArray(arr){
-    return arr.slice();
-    // var newArr = [];
-    // for(var i = 0; i < arr.length; i++) newArr.push(arr[i]);
-    // return newArr;
-}
-
 function comparePath(arr1, arr2){
     if(arr1.length != arr2.length) return null;
     var eq = true;
@@ -190,8 +182,8 @@ class AccData{
     }
 
     move(fromPath, toPath) {
-        var fromPathCopy = copyArray(fromPath);
-        var toPathCopy = copyArray(toPath);
+        var fromPathCopy = fromPath.copy;
+        var toPathCopy = toPath.copy;
         var movingNode = this._getNode(fromPathCopy);
         
         this.remove(fromPathCopy);
@@ -292,7 +284,7 @@ class DragHandler {
     }
 
     getFirstRowOfChunk(chunkPath) {
-        var firstRowPath = copyArray(chunkPath);
+        var firstRowPath = chunkPath.copy;
         var firstRow = null;
         for(; firstRowPath.length <= this._table.data.hierarchy.length + 1; firstRowPath.push(0)) {
             firstRow = document.getElementById(this._table.HTMLRowPrefix + firstRowPath.string);
@@ -412,7 +404,7 @@ class DragHandler {
         this._clickedMoment = Date.now();
 
         if(this._clickedMoment - prevClickMoment < 300){
-            var pathToInsert = copyArray(this._objPath);
+            var pathToInsert = this._objPath.copy;
             pathToInsert[pathToInsert.length-1]++;
             this._table.insertNew(pathToInsert);
             this.endDrag();
@@ -563,7 +555,7 @@ class DragHandler {
 
         this._table.data.move(this._objPath, toPath);
         this._table.rereadTable();
-        this._objPath = copyArray(toPath);
+        this._objPath = toPath.copy;
         this._objChunk = this.getChunk(this._objPath);
         this.styleObjCunk();
 
@@ -884,9 +876,9 @@ class AccTable{
     }
     bubbleUpdatePartialSum(classPath) {
         if(document.getElementById(this.HTMLSumRowPrefix + classPath.string).cells.length==0) return;//table load not done
-        var classPathCopy = copyArray(classPath);
+        var classPathCopy = classPath.copy;
         while(0<classPathCopy.length) {
-            this.updatePartialSum(copyArray(classPathCopy));
+            this.updatePartialSum(classPathCopy.copy);
             classPathCopy.pop();
         }
     }
