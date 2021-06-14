@@ -1,15 +1,5 @@
 'use strict';
 //window.onload = function() {}
-function comparePath(arr1, arr2){
-    if(arr1.length != arr2.length) return null;
-    var eq = true;
-    for(var i = 0; i < arr1.length; i++) {
-        if(arr1[i] < arr2[i]) return 1;
-        else if(arr1[i] > arr2[i]) return -1;
-    }
-    return 0;
-}
-
 class Path extends Array {
     constructor() {
         super(0);
@@ -81,7 +71,7 @@ class AccClassNode extends AccNode{
     get name(){return this._name;}
     set name(newName){this._name = newName;}
     get children(){return this._childNodes;}
-    get maximumChildrenCnt(){return 99;}
+    static get maximumChildrenCnt(){return 99;}
 
     removeChild(childIdx) {
         var childNode = this._childNodes[childIdx];
@@ -144,7 +134,7 @@ class AccData{
     _isSibling(path1, path2) {
         if (path1.length != path2.length) return false;
         var len = path1.length;
-        if (comparePath(path1.slice(0, len-1), path2.slice(0, len-1))==0) return true;
+        if (path1.slice(0, len-1).value == path2.slice(0, len-1).value) return true;
         return false;
     }
 
@@ -523,7 +513,7 @@ class DragHandler {
         for(let i = checkingRange.start; i<=checkingRange.end; i++) {
             var checkingChunkInfo = this.getChunkInfo(rows[i]);
             if(checkingChunkInfo.type == 'invalid') continue;
-            if(comparePath(checkingChunkInfo.path, this._objPath) == 0) continue;
+            if(checkingChunkInfo.path.value == this._objPath.value) continue;
             if(this.isMoveCondition(checkingChunkInfo)) {
                 slideDownChunkInfo = checkingChunkInfo;
 
@@ -533,7 +523,7 @@ class DragHandler {
                     toPath = slideDownChunkInfo.path.concat(0);
                 }else if(slideDownChunkInfo.type == 'classSum') {
                     var parentPath = this._objPath.slice(0, this._objPath.length-1);
-                    if(comparePath(slideDownChunkInfo.path, parentPath)==0) continue;
+                    if(slideDownChunkInfo.path.value == parentPath) continue;
                     toPath =  slideDownChunkInfo.path.concat(this._table.data.countChildren(slideDownChunkInfo.path));
                 }else if(slideDownChunkInfo.type == 'normal') {
                     toPath = slideDownChunkInfo.path;
@@ -541,7 +531,7 @@ class DragHandler {
                     console.log(slideDownChunkInfo);
                 }
 
-                if(comparePath(toPath, this._objPath)==0) continue;  
+                if(toPath.value == this._objPath.value) continue;  
 
                 return toPath;
             }
