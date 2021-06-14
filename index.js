@@ -18,6 +18,41 @@ function comparePath(arr1, arr2){
     return 0;
 }
 
+class Path extends Array {
+    constructor() {
+        super(0);
+        this.push.apply(this, arguments);
+    }
+
+    get copy(){return this.slice();}
+    get value(){return this.valueOf();}
+    get string(){return JSON.stringify(this);}
+    
+    // static compare(path1, path2){
+    //     if(path1.length != path2.length) return null;
+    //     for(var i = 0; i < path1.length; i++) {
+    //         if(path1[i] < path2[i]) return 1;
+    //         else if(path1[i] > path2[i]) return -1;
+    //     }
+    //     return 0;
+    // }
+    // static equal(path1, path2){
+    //     return Path.compare(path1, path2) == 0;
+    // }
+    valueOf(){
+        var primitiveValue = 0;
+        for(var i=0; i<this.length; i++)
+            primitiveValue += this[i] * Math.pow(AccClassNode.maximumChildrenCnt+1, this.length-i-1);
+        return primitiveValue;
+    }
+
+    static parse(string) {
+        var newPath = new Path();
+        newPath.push.apply(newPath, JSON.parse(string));
+        return newPath;
+    }
+}
+
 class AccNode{
     constructor(){
         this._parentNode = null;
@@ -260,7 +295,7 @@ class DragHandler {
         var firstRowPath = copyArray(chunkPath);
         var firstRow = null;
         for(; firstRowPath.length <= this._table.data.hierarchy.length + 1; firstRowPath.push(0)) {
-            firstRow = document.getElementById(this._table.HTMLRowPrefix + firstRowPath);
+            firstRow = document.getElementById(this._table.HTMLRowPrefix + firstRowPath.string);
             if(firstRow) return firstRow;
         }
     }
@@ -348,10 +383,10 @@ class DragHandler {
                 else cellCnt++;
                 var isHigherLevelDragHandle =
                     cell.classList.contains(this._table.DRAGHANDLE)
-                    && this._objPath.length>JSON.parse(cell.getAttribute('path')).length;
+                    && this._objPath.length>Path.parse(cell.getAttribute('path')).length;
                 var isHigherLevelClassCell =
                     cell.classList.contains(this._table.HTMLClassClass)
-                    && this._objPath.length>JSON.parse(cell.getAttribute('path')).length;
+                    && this._objPath.length>Path.parse(cell.getAttribute('path')).length;
                 if(isHigherLevelDragHandle || isHigherLevelClassCell) {
                     leavingCellCnt ++;
                     cellIdx++;
@@ -370,7 +405,7 @@ class DragHandler {
     startDrag(event) {
         if(event.button != 0) return true;
 
-        this._objPath = JSON.parse(event.target.getAttribute('path'));
+        this._objPath = Path.parse(event.target.getAttribute('path'));
         this._objChunk = this.getChunk(this._objPath);
 
         var prevClickMoment = this._clickedMoment;
@@ -420,14 +455,14 @@ class DragHandler {
     }
     getChunkPos(chunkInfo) {//only y position and height is valid
         if(chunkInfo.type == 'emptyClass') {
-            return document.getElementById(this._table.HTMLRowPrefix + chunkInfo.path).getBoundingClientRect();
+            return document.getElementById(this._table.HTMLRowPrefix + chunkInfo.path.string).getBoundingClientRect();
         }else if(chunkInfo.type == 'classSum') {
-            return document.getElementById(this._table.HTMLSumRowPrefix + chunkInfo.path).getBoundingClientRect();
+            return document.getElementById(this._table.HTMLSumRowPrefix + chunkInfo.path.string).getBoundingClientRect();
         }else if(chunkInfo.type == 'normal') {
             if(chunkInfo.path.length == this._table.data.hierarchy.length + 1) {//item chunk
-                return document.getElementById(this._table.HTMLItemPrefix + '항목-' + chunkInfo.path).getBoundingClientRect();
+                return document.getElementById(this._table.HTMLItemPrefix + '항목-' + chunkInfo.path.string).getBoundingClientRect();
             }else{//class chunk
-                var classCell = document.getElementById(this._table.HTMLIDPrefix + chunkInfo.path);
+                var classCell = document.getElementById(this._table.HTMLIDPrefix + chunkInfo.path.string);
                 return classCell.getBoundingClientRect();
             }
         }
@@ -658,7 +693,7 @@ class AccTable{
     get tHeadLength() {return this._tableElement.tHead.children.length;}
     getRowPath(elem) {
         var row  = elem.tagName == 'TR' ?  elem : elem.closest('tr');
-        return JSON.parse(row.getAttribute('path'));
+        return Path.parse(row.getAttribute('path'));
     }
     snycCellToData(cell, feildData = cell.textContent) {//snyc from cell to data
         var itemPath = this.getRowPath(cell);
@@ -668,7 +703,7 @@ class AccTable{
     snycClassName(event) {//classCell, className = classCell.textContent) {//snyc from table to data
         var classCell = event.target; 
         var className = classCell.textContent
-        var classPath = JSON.parse(classCell.getAttribute('path'));
+        var classPath = Path.parse(classCell.getAttribute('path'));
         this._data.setClassName(classPath, className);
     }
     countClassRows(classPath) { //count including empty class row
@@ -700,6 +735,10 @@ class AccTable{
     }
     preventEventDefault(event) {
         event.preventDefault();
+    }
+
+    getHTMLID(opt, path) {
+
     }
 
     //--Construstion function--
@@ -810,7 +849,7 @@ class AccTable{
 
     //--Sum--
     updatePartialSum(classPath) {
-        var sumRow = document.getElementById(this.HTMLSumRowPrefix + classPath);
+        var sumRow = document.getElementById(this.HTMLSumRowPrefix + classPath.string);
         var feilds = [this._itemCellComposition[this._itemCellComposition.length-4]
             ,this._itemCellComposition[this._itemCellComposition.length-3]];
 
@@ -825,7 +864,7 @@ class AccTable{
                 sum = 0;
                 for(var j=0; j<this._data.countChildren(classPath); j++){
                     var childPath = classPath.concat(j);
-                    var childClassSumRow = document.getElementById(this.HTMLSumRowPrefix + childPath);
+                    var childClassSumRow = document.getElementById(this.HTMLSumRowPrefix + childPath.string);
                     var childClassSumCell = childClassSumRow.getElementsByClassName(this.HTMLSumCellPrefix + field)[0];
                     sum += parseInt(childClassSumCell.getAttribute('number-data'));
                 }
@@ -844,7 +883,7 @@ class AccTable{
         this.calculatePercent(sumRow, true);
     }
     bubbleUpdatePartialSum(classPath) {
-        if(document.getElementById(this.HTMLSumRowPrefix + classPath).cells.length==0) return;//table load not done
+        if(document.getElementById(this.HTMLSumRowPrefix + classPath.string).cells.length==0) return;//table load not done
         var classPathCopy = copyArray(classPath);
         while(0<classPathCopy.length) {
             this.updatePartialSum(copyArray(classPathCopy));
@@ -947,7 +986,7 @@ class AccTable{
             amountCell.style.textAlign = "left"
         }
         this.calculatePercent(amountCell.parentElement);
-        var itemPath = JSON.parse(amountCell.parentElement.getAttribute('path'));
+        var itemPath = Path.parse(amountCell.parentElement.getAttribute('path'));
         this.bubbleUpdatePartialSum(itemPath.slice(0,itemPath.length-1));
     }
     amountCellAfterKeyboardEdit(event) {
@@ -1025,7 +1064,7 @@ class AccTable{
             });
             break;
         case '항목'://항목
-            cell.id = this.HTMLItemPrefix + itemCellType + '-' + itemPath;
+            cell.id = this.HTMLItemPrefix + itemCellType + '-' + itemPath.string;
             cell.classList.add(this.HTMLPrefix + itemCellType);
             cell.setAttribute('contenteditable', true);
             cell.addEventListener('focus', this.selectOnFocus);
@@ -1084,7 +1123,7 @@ class AccTable{
         return cell;
     }
     setClassCell(cell, classPath){
-        cell.id = this.HTMLIDPrefix + classPath;
+        cell.id = this.HTMLIDPrefix + classPath.string;
         cell.textContent = this._data.getClassName(classPath);
         cell.setAttribute('rowspan', Math.max(2, this.countClassRows(classPath)));
         cell.setAttribute('path', JSON.stringify(classPath));
@@ -1188,7 +1227,7 @@ class AccTable{
     createSumRow(classPath){
         var accTbody = this._tableElement.tBodies[0];
         var sumRow = accTbody.insertRow();
-        sumRow.id = this.HTMLSumRowPrefix + classPath;
+        sumRow.id = this.HTMLSumRowPrefix + classPath.string;
         sumRow.classList.add(this.HTMLSumRowClass);
         sumRow.setAttribute('path', JSON.stringify(classPath));
     }
@@ -1196,7 +1235,7 @@ class AccTable{
         var accTbody = this._tableElement.tBodies[0];
         if(this._data.countChildren(classPath) == 0){//class doesn't have subclass, empty
                 var row = accTbody.insertRow();
-                row.id = this.HTMLRowPrefix + classPath;
+                row.id = this.HTMLRowPrefix + classPath.string;
                 row.classList.add(this.EMPTYROW);
                 row.setAttribute('path', JSON.stringify(classPath));
         }else if(classPath.length < this._data._hierarchy.length){//not lowest level class//recurse subclass
@@ -1206,7 +1245,7 @@ class AccTable{
             for(var i = 0; i < this._data.countChildren(classPath); i++) {
                 var itemPath = classPath.concat([i]);
                 var row = accTbody.insertRow();
-                row.id = this.HTMLRowPrefix + itemPath;
+                row.id = this.HTMLRowPrefix + itemPath.string;
                 row.classList.add(this.HTMLItemClass);
                 row.setAttribute('path', JSON.stringify(itemPath));
             }
@@ -1216,10 +1255,10 @@ class AccTable{
     readDataAndSet() {
         var accTbody = document.createElement('tbody');
         this._tableElement.append(accTbody);
-        this.createRowsRecursion([0]);
+        this.createRowsRecursion(new Path(0));
         this._data.reassignItemCodes();
         var startingRowPosition = 2;//row that item starts
-        this.createCellsRecursion(startingRowPosition, [0]);
+        this.createCellsRecursion(startingRowPosition, new Path(0));
         this._dragHanlder.setEvent();
     }
     rereadTable() { //Read and draw table again.
