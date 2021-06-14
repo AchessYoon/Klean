@@ -691,19 +691,14 @@ class AccTable{
         this._data.setClassName(classPath, className);
     }
     countClassRows(classPath) { //count including empty class row
+        var rowCount = 0;
         if(classPath.length == this._data._hierarchy.length){//lowest class
-            return Math.max(1, this._data.countChildren(classPath))+1;//least 1 in empty case, add 1 for sumRow
+            rowCount += this._data.countChildren(classPath);
         } else {//sum row count in subclasses
-            var rowCount = 0;
-            if(this._data.countChildren(classPath) == 0) rowCount = 1;
-            else{
-                for(let i = 0; i < this._data.countChildren(classPath); i++){
-                    var subClassPath = classPath.concat([i]);
-                    rowCount += this.countClassRows(subClassPath);
-                }
-            }
-            return rowCount+1;//add 1 for sumRow
+            for(let i = 0; i < this._data.countChildren(classPath); i++)
+                rowCount += this.countClassRows(classPath.concat(i));
         }
+        return Math.max(1, rowCount)+1;//least 1 in empty case, add 1 for sumRow
     }
     selectOnFocus(focusEvent) { //focusedCell must be an element
         var focusedCell = focusEvent.target;
