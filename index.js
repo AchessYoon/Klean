@@ -185,16 +185,23 @@ class AccData{
     }
 
     countItemsInClass(classPath) {
-        if(classPath.length == this._hierarchy.length){//lowest class
-            return this._getNode(classPath).children.length;
-        } else {//sum item-count in subclasses
-            var itemCount = 0;
-            for(let i = 0; i < this._getNode(classPath).children.length; i++) {
-                var subClassPath = classPath.concat([i]);
-                itemCount += this.countItemsInClass(subClassPath);
-            }
-            return itemCount;
+        // if(classPath.length == this._hierarchy.length){//lowest class
+        //     return this._getNode(classPath).children.length;
+        // } else {//sum item-count in subclasses
+        //     var itemCount = 0;
+        //     for(let i = 0; i < this._getNode(classPath).children.length; i++) {
+        //         var subClassPath = classPath.concat([i]);
+        //         itemCount += this.countItemsInClass(subClassPath);
+        //     }
+        //     return itemCount;
+        // }
+
+        var visitFunc = function(visitingNode, childCounts) {
+            if(visitingNode.isItem()) return 1;
+            else return childCounts.reduce((accumulator, currentValue) => {return accumulator + currentValue;}, 0);
         }
+
+        return this.traverseSubtree(this._getNode(classPath), calcSum.bind(this));
     }
     countChildren(classPath) {
         return this._getNode(classPath).children.length;
