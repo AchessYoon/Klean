@@ -8,12 +8,11 @@ class Path extends Array {
         this._scopeData = null;
     }
 
-    setScopeData(givenData){return this._scopeData = givenData;}
-
     get copy(){
         var copiedPath = this.slice();
         copiedPath.setScopeData(this._scopeData);
-        return copiedPath;}
+        return copiedPath;
+    }
     get value(){return this.valueOf();}
     get string(){return JSON.stringify(this);}
     
@@ -24,11 +23,32 @@ class Path extends Array {
         return primitiveValue;
     }
 
-    static parse(string) {
+    static parse(string, scopeData) {
         var newPath = new Path();
         newPath.push.apply(newPath, JSON.parse(string));
-        newPath.setScopeData(this._scopeData);
+        newPath.setScopeData(scopeData);
         return newPath;
+    }
+
+    //--Scope related--
+    setScopeData(givenData) {this._scopeData = givenData;}
+    isClassPath() {
+        return this.length <= this._scopeData.hierarchy.length;
+    }
+    isLowestLevelClassPath() {
+        return this.length == this._scopeData.hierarchy.length;
+    }
+
+    //-Set scope at inherited methods that returns a new object--
+    concat() {
+        var result = super.concat.apply(this, arguments);
+        result.setScopeData(this._scopeData);
+        return result;
+    }
+    slice() {
+        var result = super.slice.apply(this, arguments);
+        result.setScopeData(this._scopeData);
+        return result;
     }
 }
 
@@ -155,7 +175,7 @@ class AccData{
         this._getNode(path.slice(0,path.length-1)).insertChild(path[path.length-1], node);
     }
     insertNew(path) {
-        if(path.length <= this._hierarchy.length) this._insert(path, new AccClassNode());
+        if(path.isClassPath()) this._insert(path, new AccClassNode());
         else this._insert(path, new AccItemNode());
     }
 
@@ -264,16 +284,17 @@ class DragHandler {
     getFirstRowOfChunk(chunkPath) {
         var firstRowPath = chunkPath.copy;
         var firstRow = null;
-        for(; firstRowPath.length <= this._table.data.hierarchy.length + 1; firstRowPath.push(0)) {
+        while(!firstRow) {
             firstRow = document.getElementById(this._table.HTMLRowPrefix + firstRowPath.string);
-            if(firstRow) return firstRow;
+            firstRowPath.push(0);
         }
+        return firstRow;
     }
     getChunk(chunkPath) {
         var chunk = [];
         var rowToPush = this.getFirstRowOfChunk(chunkPath);//initializing as first row of chunk
         chunk.push(rowToPush);
-        if(chunkPath.length < this._table.data.hierarchy.length + 1) {//only if class chunk
+        if(chunkPath.isClassPath()) {//only if class chunk
             var length = this._table.countClassRows(chunkPath);
             for(var i = 1; i < length; i++) {
                 rowToPush = rowToPush.nextElementSibling;
@@ -353,10 +374,10 @@ class DragHandler {
                 else cellCnt++;
                 var isHigherLevelDragHandle =
                     cell.classList.contains(this._table.DRAGHANDLE)
-                    && this._objPath.length>Path.parse(cell.getAttribute('path')).length;
+                    && this._objPath.length>Path.parse(cell.getAttribute('path'), this._table.data).length;
                 var isHigherLevelClassCell =
                     cell.classList.contains(this._table.HTMLClassClass)
-                    && this._objPath.length>Path.parse(cell.getAttribute('path')).length;
+                    && this._objPath.length>Path.parse(cell.getAttribute('path'), this._table.data).length;
                 if(isHigherLevelDragHandle || isHigherLevelClassCell) {
                     leavingCellCnt ++;
                     cellIdx++;
@@ -375,7 +396,7 @@ class DragHandler {
     startDrag(event) {
         if(event.button != 0) return true;
 
-        this._objPath = Path.parse(event.target.getAttribute('path'));
+        this._objPath = Path.parse(event.target.getAttribute('path'), this._table.data);
         this._objChunk = this.getChunk(this._objPath);
 
         var prevClickMoment = this._clickedMoment;
@@ -663,7 +684,7 @@ class AccTable{
     get tHeadLength() {return this._tableElement.tHead.children.length;}
     getRowPath(elem) {
         var row  = elem.tagName == 'TR' ?  elem : elem.closest('tr');
-        return Path.parse(row.getAttribute('path'));
+        return Path.parse(row.getAttribute('path'), this._data);
     }
     snycCellToData(cell, feildData = cell.textContent) {//snyc from cell to data
         var itemPath = this.getRowPath(cell);
@@ -673,12 +694,12 @@ class AccTable{
     snycClassName(event) {//classCell, className = classCell.textContent) {//snyc from table to data
         var classCell = event.target; 
         var className = classCell.textContent
-        var classPath = Path.parse(classCell.getAttribute('path'));
+        var classPath = Path.parse(classCell.getAttribute('path'), this._data);
         this._data.setClassName(classPath, className);
     }
     countClassRows(classPath) { //count including empty class row
         var rowCount = 0;
-        if(classPath.length == this._data._hierarchy.length){//lowest class
+        if(classPath.isLowestLevelClassPath()){//lowest class
             rowCount += this._data.countChildren(classPath);
         } else {//sum row count in subclasses
             for(let i = 0; i < this._data.countChildren(classPath); i++)
@@ -823,7 +844,7 @@ class AccTable{
             var sumCell = sumRow.getElementsByClassName(this.HTMLSumCellPrefix + field)[0];
             var sum = null;
 
-            if(classPath.length == this._data.hierarchy.length)//lowest level class
+            if(classPath.isLowestLevelClassPath())//lowest level class
                 sum = this._data.calcPartialSum(classPath, field);
             else{
                 sum = 0;
@@ -951,7 +972,7 @@ class AccTable{
             amountCell.style.textAlign = "left"
         }
         this.calculatePercent(amountCell.parentElement);
-        var itemPath = Path.parse(amountCell.parentElement.getAttribute('path'));
+        var itemPath = Path.parse(amountCell.parentElement.getAttribute('path'), this._data);
         this.bubbleUpdatePartialSum(itemPath.slice(0,itemPath.length-1));
     }
     amountCellAfterKeyboardEdit(event) {
@@ -1170,19 +1191,18 @@ class AccTable{
 
         var childPosition = rowPosition;
         var childrenCount = this._data.countChildren(classPath);
-        var areChildrenClass = classPath.length < this._data.hierarchy.length;
 
         if(childrenCount == 0) {
             this.createEmptyClassPlaceholderCell(row, classPath);
         } else {
             for(let i = 0; i < childrenCount; i++) {
                 var childDataPath = classPath.concat([i]);
-                if(areChildrenClass) {//children are also class
-                    this.createCellsRecursion(childPosition, childDataPath);
-                    childPosition += (this.countClassRows(childDataPath));
-                }else{//children are item
+                if(classPath.isLowestLevelClassPath()){//children are item
                     this.createItemCells(childPosition, childDataPath);
                     childPosition++;
+                }else{//children are also class
+                    this.createCellsRecursion(childPosition, childDataPath);
+                    childPosition += (this.countClassRows(childDataPath));
                 }
             }
         }
@@ -1203,10 +1223,7 @@ class AccTable{
                 row.id = this.HTMLRowPrefix + classPath.string;
                 row.classList.add(this.EMPTYROW);
                 row.setAttribute('path', JSON.stringify(classPath));
-        }else if(classPath.length < this._data._hierarchy.length){//not lowest level class//recurse subclass
-            for(let i = 0; i < this._data.countChildren(classPath); i++)
-                this.createRowsRecursion(classPath.concat([i]));
-        }else{//lowest level class
+        }else if(classPath.isLowestLevelClassPath()){//lowest level class
             for(var i = 0; i < this._data.countChildren(classPath); i++) {
                 var itemPath = classPath.concat([i]);
                 var row = accTbody.insertRow();
@@ -1214,6 +1231,9 @@ class AccTable{
                 row.classList.add(this.HTMLItemClass);
                 row.setAttribute('path', JSON.stringify(itemPath));
             }
+        }else{//not lowest level class//recurse subclass
+            for(let i = 0; i < this._data.countChildren(classPath); i++)
+                this.createRowsRecursion(classPath.concat([i]));
         }
         this.createSumRow(classPath);
     }
