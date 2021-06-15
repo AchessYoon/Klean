@@ -4,9 +4,16 @@ class Path extends Array {
     constructor() {
         super(0);
         this.push.apply(this, arguments);
+
+        this._scopeData = null;
     }
 
-    get copy(){return this.slice();}
+    setScopeData(givenData){return this._scopeData = givenData;}
+
+    get copy(){
+        var copiedPath = this.slice();
+        copiedPath.setScopeData(this._scopeData);
+        return copiedPath;}
     get value(){return this.valueOf();}
     get string(){return JSON.stringify(this);}
     
@@ -20,6 +27,7 @@ class Path extends Array {
     static parse(string) {
         var newPath = new Path();
         newPath.push.apply(newPath, JSON.parse(string));
+        newPath.setScopeData(this._scopeData);
         return newPath;
     }
 }
@@ -205,6 +213,14 @@ class AccData{
         }
 
         return this.traverseSubtree(this._getNode(classPath), calcSum.bind(this));
+    }
+
+    //--Path function--
+    newPath() {
+        var path = new Path();
+        path.push.apply(path, arguments);
+        path.setScopeData(this);
+        return path;
     }
 }
 
@@ -1204,10 +1220,10 @@ class AccTable{
     readDataAndSet() {
         var accTbody = document.createElement('tbody');
         this._tableElement.append(accTbody);
-        this.createRowsRecursion(new Path(0));
+        this.createRowsRecursion(this._data.newPath(0));
         this._data.reassignItemCodes();
         var startingRowPosition = 2;//row that item starts
-        this.createCellsRecursion(startingRowPosition, new Path(0));
+        this.createCellsRecursion(startingRowPosition, this._data.newPath(0));
         this._dragHanlder.setEvent();
     }
     rereadTable() { //Read and draw table again.
