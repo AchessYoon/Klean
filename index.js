@@ -10,17 +10,6 @@ class Path extends Array {
     get value(){return this.valueOf();}
     get string(){return JSON.stringify(this);}
     
-    // static compare(path1, path2){
-    //     if(path1.length != path2.length) return null;
-    //     for(var i = 0; i < path1.length; i++) {
-    //         if(path1[i] < path2[i]) return 1;
-    //         else if(path1[i] > path2[i]) return -1;
-    //     }
-    //     return 0;
-    // }
-    // static equal(path1, path2){
-    //     return Path.compare(path1, path2) == 0;
-    // }
     valueOf(){
         var primitiveValue = 0;
         for(var i=0; i<this.length; i++)
