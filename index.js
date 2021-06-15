@@ -374,10 +374,10 @@ class DragHandler {
                 else cellCnt++;
                 var isHigherLevelDragHandle =
                     cell.classList.contains(this._table.DRAGHANDLE)
-                    && this._objPath.length>Path.parse(cell.getAttribute('path'), this._table.data).length;
+                    && this._objPath.length>this._table.getElementPath(cell).length;
                 var isHigherLevelClassCell =
                     cell.classList.contains(this._table.HTMLClassClass)
-                    && this._objPath.length>Path.parse(cell.getAttribute('path'), this._table.data).length;
+                    && this._objPath.length>this._table.getElementPath(cell).length;
                 if(isHigherLevelDragHandle || isHigherLevelClassCell) {
                     leavingCellCnt ++;
                     cellIdx++;
@@ -396,7 +396,7 @@ class DragHandler {
     startDrag(event) {
         if(event.button != 0) return true;
 
-        this._objPath = Path.parse(event.target.getAttribute('path'), this._table.data);
+        this._objPath = this._table.getElementPath(event.target);
         this._objChunk = this.getChunk(this._objPath);
 
         var prevClickMoment = this._clickedMoment;
@@ -686,6 +686,9 @@ class AccTable{
         var row  = elem.tagName == 'TR' ?  elem : elem.closest('tr');
         return Path.parse(row.getAttribute('path'), this._data);
     }
+    getElementPath(elem) {
+        return Path.parse(elem.getAttribute('path'), this._data);
+    }
     snycCellToData(cell, feildData = cell.textContent) {//snyc from cell to data
         var itemPath = this.getRowPath(cell);
         var feildName = cell.getAttribute('feild-name');
@@ -694,7 +697,7 @@ class AccTable{
     snycClassName(event) {//classCell, className = classCell.textContent) {//snyc from table to data
         var classCell = event.target; 
         var className = classCell.textContent
-        var classPath = Path.parse(classCell.getAttribute('path'), this._data);
+        var classPath = this.getElementPath(classCell);
         this._data.setClassName(classPath, className);
     }
     countClassRows(classPath) { //count including empty class row
@@ -972,7 +975,7 @@ class AccTable{
             amountCell.style.textAlign = "left"
         }
         this.calculatePercent(amountCell.parentElement);
-        var itemPath = Path.parse(amountCell.parentElement.getAttribute('path'), this._data);
+        var itemPath = this.getRowPath(amountCell);
         this.bubbleUpdatePartialSum(itemPath.slice(0,itemPath.length-1));
     }
     amountCellAfterKeyboardEdit(event) {
